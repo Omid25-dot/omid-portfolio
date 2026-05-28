@@ -1055,8 +1055,72 @@
   document.querySelectorAll('.skill-bar-list').forEach(el => barObs.observe(el));
 
   // Footer date
-  document.getElementById('footer-date').textContent =
+
+    document.getElementById('footer-date').textContent =
     new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+
+  const heroRight = document.querySelector('.hero-right');
+
+  function initChips() {
+    const chips = ['chip-1','chip-2','chip-3'].map(id => {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      const bw = heroRight.offsetWidth;
+      const bh = heroRight.offsetHeight;
+      const x = Math.random() * (bw - 200);
+      const y = Math.random() * (bh - 40);
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 0.4 + Math.random() * 0.4;
+      return {
+        el,
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        tx: Math.random() * (bw - 200),
+        ty: Math.random() * (bh - 40),
+        rot: (Math.random() - 0.5) * 6,
+        rotSpeed: (Math.random() - 0.5) * 0.04
+      };
+    }).filter(Boolean);
+
+    function tick() {
+      const bw = heroRight.offsetWidth;
+      const bh = heroRight.offsetHeight;
+      chips.forEach(c => {
+        const cw = c.el.offsetWidth;
+        const ch = c.el.offsetHeight;
+        const dx = c.tx - c.x;
+        const dy = c.ty - c.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 40) {
+          c.tx = 20 + Math.random() * (bw - cw - 40);
+          c.ty = 20 + Math.random() * (bh - ch - 40);
+        }
+        const steer = 0.003;
+        if (dist > 0) { c.vx += (dx/dist)*steer; c.vy += (dy/dist)*steer; }
+        const spd = Math.sqrt(c.vx*c.vx + c.vy*c.vy);
+        if (spd > 0.9) { c.vx = (c.vx/spd)*0.9; c.vy = (c.vy/spd)*0.9; }
+        c.x += c.vx; c.y += c.vy;
+        if (c.x < 0)         { c.x = 0;        c.vx =  Math.abs(c.vx); }
+        if (c.x > bw - cw)   { c.x = bw - cw;  c.vx = -Math.abs(c.vx); }
+        if (c.y < 0)         { c.y = 0;         c.vy =  Math.abs(c.vy); }
+        if (c.y > bh - ch)   { c.y = bh - ch;   c.vy = -Math.abs(c.vy); }
+        c.rot += c.rotSpeed;
+        if (Math.abs(c.rot) > 5) c.rotSpeed *= -1;
+        c.el.style.top = '0';
+        c.el.style.left = '0';
+        c.el.style.transform = `translate(${c.x}px, ${c.y}px) rotate(${c.rot}deg)`;
+      });
+      requestAnimationFrame(tick);
+    }
+    tick();
+  }
+
+  if (document.fonts) {
+    document.fonts.ready.then(initChips);
+  } else {
+    setTimeout(initChips, 300);
+  }('footer-date').textContent =meric' });
 </script>
 </body>
 </html>
