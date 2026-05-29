@@ -728,6 +728,55 @@
     .projects-inner, .contact-inner { padding: 0 1.5rem; }
     footer { padding: 1.5rem; flex-direction: column; gap: 0.5rem; text-align: center; }
   }
+
+  /* Tilt banner — mobile portrait only */
+  #tilt-banner {
+    display: none;
+  }
+  @media (max-width: 768px) and (orientation: portrait) {
+    #tilt-banner {
+      display: flex;
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 200;
+      background: var(--ink);
+      color: var(--paper);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      padding: 0.75rem 1.25rem;
+      border-radius: 100px;
+      align-items: center;
+      gap: 0.6rem;
+      white-space: nowrap;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      animation: banner-in 0.5s ease 1.5s both;
+    }
+    .tilt-icon {
+      font-size: 1rem;
+      animation: tilt-wiggle 1.8s ease-in-out infinite;
+      display: inline-block;
+    }
+  }
+  @media (max-width: 768px) and (orientation: landscape) {
+    #tilt-banner { display: none !important; }
+    .hero { grid-template-columns: 1fr 1fr; padding-top: 5rem; }
+    .hero-right { display: flex !important; }
+    .hero-left { padding: 2rem 1.5rem; }
+    .hero-visual { max-width: 280px; }
+    .stat-chip { font-size: 0.6rem; padding: 0.4rem 0.75rem; }
+  }
+  @keyframes banner-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+  @keyframes tilt-wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25%  { transform: rotate(-25deg); }
+    75%  { transform: rotate(25deg); }
+  }
 </style>
 </head>
 <body>
@@ -735,6 +784,12 @@
 <!-- Custom cursor -->
 <div id="cursor"></div>
 <div id="cursor-ring"></div>
+
+<!-- Mobile tilt banner -->
+<div id="tilt-banner">
+  <span class="tilt-icon">📱</span>
+  Tilt for full view
+</div>
 
 <!-- Nav -->
 <nav>
@@ -756,13 +811,13 @@
   <div class="hero-grid-bg"></div>
 
   <div class="hero-left">
-    <div class="hero-eyebrow">Future Developer · GLASGOW</div>
+    <div class="hero-eyebrow">Python Developer · London</div>
     <h1 class="hero-name">Omid<br><em>Merati</em></h1>
     <div class="hero-title-line">
       <span>Dev<span class="hero-badge">v1.0</span></span>
     </div>
     <p class="hero-description">
-      I am a 17 year old student who is currently learning Python to build practical tools in automation, AI and problem-solving.
+      Aspiring Python developer building practical tools in automation, AI and problem-solving.
       Turning ideas into working software — from smart assistants to games.
     </p>
     <div class="hero-ctas">
@@ -785,8 +840,8 @@
           <span class="t-line t-comment"># Developer profile loaded</span>
           <span class="t-line">&nbsp;</span>
           <span class="t-line"><span class="t-key">name</span>     = <span class="t-str">"Omid Merati"</span></span>
-          <span class="t-line"><span class="t-key">role</span>     = <span class="t-str">"Future Developer"</span></span>
-          <span class="t-line"><span class="t-key">location</span> = <span class="t-str">"GLASGOW, UK"</span></span>
+          <span class="t-line"><span class="t-key">role</span>     = <span class="t-str">"Python Developer"</span></span>
+          <span class="t-line"><span class="t-key">location</span> = <span class="t-str">"London, UK"</span></span>
           <span class="t-line"><span class="t-key">focus</span>    = [<span class="t-val">"AI"</span>, <span class="t-val">"Automation"</span>,</span>
           <span class="t-line">           <span class="t-val"> "Problem-Solving"</span>]</span>
           <span class="t-line">&nbsp;</span>
@@ -808,12 +863,13 @@
     <div>
       <h2 class="about-headline reveal">I build things<br>that <em>actually work</em></h2>
       <p class="about-text reveal reveal-delay-1">
-        I'm a self-driven student who is working towards becoming a future developer I am based in Glasgow, focused on building tools
+        I'm a self-driven Python developer based in London, focused on building tools
         that solve real problems. I believe the best code is the kind that actually gets used —
         whether that's automating a tedious workflow or creating something fun.
       </p>
       <p class="about-text reveal reveal-delay-2">
-        Currently building a Smart Fridge AI Assistant using Raspberry Pi and computer vision.
+        Currently building a Smart Fridge AI Assistant using Raspberry Pi and computer vision —
+        because the best projects start with a ridiculous idea that turns out to actually be useful.
       </p>
       <div class="skill-tags reveal reveal-delay-3">
         <span class="tag accent">Python</span>
@@ -1024,11 +1080,19 @@
     });
   });
 
-  // Scroll reveal
+  // Scroll reveal — re-triggers every time element enters view
   const revealEls = document.querySelectorAll('.reveal');
   const obs = new IntersectionObserver((entries) => {
     entries.forEach(e => {
-      if (e.isIntersecting) { e.target.classList.add('visible'); }
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+      } else {
+        // Remove visible when it scrolls out so it animates again on re-entry
+        // But skip hero elements so they don't flicker on load
+        if (!e.target.closest('.hero')) {
+          e.target.classList.remove('visible');
+        }
+      }
     });
   }, { threshold: 0.12 });
   revealEls.forEach(el => obs.observe(el));
