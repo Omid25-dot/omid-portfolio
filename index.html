@@ -29,6 +29,15 @@
     cursor: none;
     overflow-x: hidden;
   }
+  body a,
+  body button,
+  body .project-card,
+  body .stat-block,
+  body .tag,
+  body .contact-link,
+  body .stat-chip {
+    cursor: none;
+  }
 
   /* Custom cursor */
   #cursor {
@@ -298,7 +307,6 @@
     white-space: nowrap;
     box-shadow: 0 8px 24px rgba(0,0,0,0.12);
     z-index: 10;
-    cursor: default;
     will-change: transform;
     top: 0; left: 0;
   }
@@ -488,7 +496,6 @@
     position: relative;
     overflow: hidden;
     transition: border-color 0.3s, transform 0.3s;
-    cursor: pointer;
     background: rgba(255,255,255,0.02);
   }
   .project-card::before {
@@ -1059,20 +1066,25 @@
   const cur = document.getElementById('cursor');
   const ring = document.getElementById('cursor-ring');
   let mx = 0, my = 0, rx = 0, ry = 0;
-  document.addEventListener('mousemove', e => {
-    mx = e.clientX;
-    my = e.clientY;
-
+  function updateCursorSurface() {
     const hoveredElement = document.elementFromPoint(mx, my);
     const onDarkSurface = hoveredElement?.closest(
       '.terminal, .btn-primary, .stat-block.highlight-card, .projects-section, .contact-section, footer'
     );
     document.body.classList.toggle('on-dark', Boolean(onDarkSurface));
+  }
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX;
+    my = e.clientY;
+    updateCursorSurface();
   });
+  window.addEventListener('scroll', updateCursorSurface, { passive: true });
+  window.addEventListener('resize', updateCursorSurface);
   function animCursor() {
     cur.style.left = mx + 'px'; cur.style.top = my + 'px';
     rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
     ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+    updateCursorSurface();
     requestAnimationFrame(animCursor);
   }
   animCursor();
