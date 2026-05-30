@@ -40,7 +40,6 @@
     z-index: 9999;
     transform: translate(-50%, -50%);
     transition: transform 0.08s ease, width 0.2s ease, height 0.2s ease, background 0.2s ease;
-    mix-blend-mode: difference;
   }
   #cursor-ring {
     position: fixed;
@@ -50,11 +49,13 @@
     pointer-events: none;
     z-index: 9998;
     transform: translate(-50%, -50%);
-    transition: transform 0.18s ease, width 0.25s ease, height 0.25s ease, opacity 0.2s ease;
-    mix-blend-mode: difference;
+    opacity: 0.5;
+    transition: transform 0.18s ease, width 0.25s ease, height 0.25s ease, opacity 0.2s ease, border-color 0.2s ease;
   }
+  body.on-dark #cursor { background: #fff; }
+  body.on-dark #cursor-ring { border-color: #fff; }
   body.cursor-hover #cursor { width: 6px; height: 6px; }
-  body.cursor-hover #cursor-ring { width: 60px; height: 60px; opacity: 0.5; }
+  body.cursor-hover #cursor-ring { width: 60px; height: 60px; }
 
   /* Nav */
   nav {
@@ -1058,7 +1059,16 @@
   const cur = document.getElementById('cursor');
   const ring = document.getElementById('cursor-ring');
   let mx = 0, my = 0, rx = 0, ry = 0;
-  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX;
+    my = e.clientY;
+
+    const hoveredElement = document.elementFromPoint(mx, my);
+    const onDarkSurface = hoveredElement?.closest(
+      '.terminal, .btn-primary, .stat-block.highlight-card, .projects-section, .contact-section, footer'
+    );
+    document.body.classList.toggle('on-dark', Boolean(onDarkSurface));
+  });
   function animCursor() {
     cur.style.left = mx + 'px'; cur.style.top = my + 'px';
     rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
