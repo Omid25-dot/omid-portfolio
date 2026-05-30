@@ -35,6 +35,18 @@
   body .stat-block,
   body .tag,
   body .contact-link,
+  body .process-item,
+  body .skill-row,
+  body .eyebrow-group,
+  body .eyebrow-piece,
+  body .hero-description,
+  body .about-text,
+  body .about-headline,
+  body .projects-title,
+  body .contact-headline,
+  body .contact-copy,
+  body .section-label,
+  body .name-piece,
   body .stat-chip {
     cursor: none;
   }
@@ -142,13 +154,35 @@
     align-items: center;
     gap: 0.75rem;
   }
-  .hero-eyebrow::before {
-    content: '';
-    display: block;
+  .eyebrow-group,
+  .eyebrow-piece {
+    transform-origin: center;
+    transition: transform 0.24s ease, color 0.24s ease, background 0.24s ease, filter 0.24s ease;
+  }
+  .eyebrow-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .eyebrow-piece { display: inline-block; }
+  .eyebrow-line {
+    display: inline-block;
     width: 32px;
     height: 1px;
     background: var(--muted);
+    transition: background 0.24s ease, transform 0.24s ease;
   }
+  .eyebrow-group:hover,
+  .eyebrow-piece:hover {
+    transform: translateY(-5px) scale(1.08);
+    color: var(--ink);
+    filter: drop-shadow(0 10px 14px rgba(0,0,0,0.12));
+  }
+  .eyebrow-group:hover .eyebrow-line {
+    background: var(--ink);
+    transform: scaleX(1.2) scaleY(2);
+  }
+  .eyebrow-separator { color: var(--muted); }
   h1.hero-name {
     font-family: 'Syne', sans-serif;
     font-size: clamp(3.5rem, 6vw, 5.5rem);
@@ -156,12 +190,45 @@
     line-height: 0.95;
     letter-spacing: -0.03em;
     margin-bottom: 0.25rem;
+    transform-origin: left center;
+    transition: transform 0.28s ease;
   }
   h1.hero-name em {
     font-family: 'Instrument Serif', serif;
     font-style: italic;
     font-weight: 400;
     color: var(--muted);
+  }
+  .name-piece {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(16px) scale(0.9);
+    transform-origin: left center;
+    transition: transform 0.24s ease, filter 0.24s ease;
+    will-change: transform;
+  }
+  .name-piece.is-popping {
+    animation: hero-word-pop 0.72s cubic-bezier(0.2, 1, 0.3, 1) both;
+    animation-delay: var(--pop-delay, 0s);
+  }
+  .name-piece.is-ready {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  .name-piece:hover,
+  .name-piece.is-popped {
+    animation: none;
+    opacity: 1;
+    transform: translateY(-7px) scale(1.07);
+    filter: drop-shadow(0 14px 18px rgba(0,0,0,0.14));
+  }
+  .name-omid { --pop-delay: 0.05s; }
+  .name-merati { --pop-delay: 0.28s; }
+  .name-dev { --pop-delay: 0.52s; }
+  @keyframes hero-word-pop {
+    0% { opacity: 0; transform: translateY(22px) scale(0.86); }
+    55% { opacity: 1; transform: translateY(-10px) scale(1.09); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
   }
   .hero-title-line {
     font-family: 'Syne', sans-serif;
@@ -195,6 +262,19 @@
     color: var(--muted);
     max-width: 400px;
     margin-bottom: 2.5rem;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 0.5rem 0.75rem;
+    margin-left: -0.75rem;
+    transform-origin: left center;
+    transition: transform 0.24s ease, background 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+  }
+  .hero-description:hover,
+  .hero-description.is-popped {
+    transform: translateY(-6px) scale(1.035);
+    background: rgba(255,255,255,0.74);
+    border-color: var(--border);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.1);
   }
   .hero-ctas {
     display: flex;
@@ -253,9 +333,13 @@
     position: relative;
     z-index: 1;
     transform: rotate(1.5deg);
-    transition: transform 0.4s ease;
+    transform-origin: center;
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
   }
-  .terminal:hover { transform: rotate(0deg); }
+  .terminal:hover {
+    transform: rotate(0deg) scale(1.05);
+    box-shadow: 0 40px 96px rgba(0,0,0,0.3);
+  }
   .terminal-bar {
     display: flex;
     align-items: center;
@@ -311,6 +395,7 @@
     top: 0; left: 0;
   }
   .stat-chip:hover {
+    --pop-scale: 1.05;
     box-shadow: 0 16px 40px rgba(0,0,0,0.2);
   }
 
@@ -341,6 +426,8 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    transform-origin: left center;
+    transition: transform 0.24s ease, filter 0.24s ease;
   }
   .section-label::before {
     content: '';
@@ -363,6 +450,13 @@
     font-weight: 700;
     line-height: 1.1;
     letter-spacing: -0.03em;
+    transform-origin: left center;
+    transition: transform 0.24s ease, filter 0.24s ease;
+  }
+  .about-headline:hover,
+  .about-headline.is-popped {
+    transform: translateY(-6px) scale(1.035);
+    filter: drop-shadow(0 14px 18px rgba(0,0,0,0.12));
   }
   .about-headline em {
     font-family: 'Instrument Serif', serif;
@@ -375,6 +469,15 @@
     line-height: 1.8;
     color: var(--muted);
     margin-bottom: 1.5rem;
+    border-radius: 12px;
+    padding: 0.35rem 0.65rem;
+    margin-left: -0.65rem;
+    transform-origin: left center;
+    transition: transform 0.24s ease, background 0.24s ease, box-shadow 0.24s ease;
+  }
+  .about-text:hover {
+    background: rgba(255,255,255,0.72);
+    box-shadow: 0 16px 36px rgba(0,0,0,0.09);
   }
   .skill-tags {
     display: flex;
@@ -470,7 +573,10 @@
     font-weight: 800;
     letter-spacing: -0.03em;
     line-height: 1;
+    transform-origin: left center;
+    transition: transform 0.24s ease, filter 0.24s ease;
   }
+  .projects-title:hover { filter: drop-shadow(0 16px 22px rgba(232,255,71,0.16)); }
   .projects-title em {
     font-family: 'Instrument Serif', serif;
     font-style: italic;
@@ -667,12 +773,33 @@
     letter-spacing: -0.04em;
     line-height: 1;
     margin-bottom: 2rem;
+    transform-origin: left center;
+    transition: transform 0.24s ease, filter 0.24s ease;
   }
+  .contact-headline:hover { filter: drop-shadow(0 16px 22px rgba(232,255,71,0.12)); }
   .contact-headline em {
     font-family: 'Instrument Serif', serif;
     font-style: italic;
     font-weight: 400;
     color: rgba(255,255,255,0.35);
+  }
+  .contact-copy {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.4);
+    max-width: 400px;
+    line-height: 1.7;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 0.55rem 0.75rem;
+    margin-left: -0.75rem;
+    transform-origin: left center;
+    transition: transform 0.24s ease, color 0.24s ease, background 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+  }
+  .contact-copy:hover {
+    color: rgba(255,255,255,0.68);
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+    box-shadow: 0 18px 42px rgba(0,0,0,0.24);
   }
   .contact-links {
     display: flex;
@@ -707,6 +834,53 @@
     letter-spacing: 0.08em;
   }
 
+  /* Shared hover pop */
+  .nav-logo,
+  .nav-links a {
+    display: inline-block;
+  }
+  .nav-logo,
+  .nav-links a,
+  .btn-primary,
+  .btn-secondary,
+  .project-card,
+  .stat-block,
+  .tag,
+  .contact-link,
+  .process-item,
+  .skill-row,
+  .eyebrow-group,
+  .eyebrow-piece,
+  .hero-description,
+  .about-text,
+  .about-headline,
+  .projects-title,
+  .contact-headline,
+  .contact-copy,
+  .section-label {
+    transform-origin: center;
+    will-change: transform;
+  }
+  .nav-logo:hover,
+  .nav-links a:hover,
+  .btn-primary:hover,
+  .btn-secondary:hover,
+  .project-card:hover,
+  .stat-block:hover,
+  .tag:hover,
+  .contact-link:hover,
+  .process-item:hover,
+  .skill-row:hover,
+  .hero-description:hover,
+  .about-text:hover,
+  .about-headline:hover,
+  .projects-title:hover,
+  .contact-headline:hover,
+  .contact-copy:hover,
+  .section-label:hover {
+    transform: translateY(-5px) scale(1.04);
+  }
+
   /* Scroll reveal */
   .reveal {
     opacity: 0;
@@ -716,6 +890,36 @@
   .reveal.visible {
     opacity: 1;
     transform: none;
+  }
+  .terminal.reveal.visible {
+    transform: rotate(1.5deg);
+    transition: opacity 0.8s ease, transform 0.35s ease, box-shadow 0.35s ease;
+  }
+  .terminal.reveal.visible:hover {
+    transform: rotate(0deg) scale(1.05);
+  }
+  .reveal.visible.project-card,
+  .reveal.visible.stat-block,
+  .reveal.visible.process-item,
+  .reveal.visible.skill-row,
+  .reveal.visible.about-text,
+  .reveal.visible.about-headline,
+  .reveal.visible.projects-title,
+  .reveal.visible.contact-headline,
+  .reveal.visible.contact-copy {
+    transition: opacity 0.8s ease, transform 0.24s ease, color 0.24s ease, background 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+  }
+  .reveal.visible.project-card:hover,
+  .reveal.visible.stat-block:hover,
+  .reveal.visible.process-item:hover,
+  .reveal.visible.skill-row:hover,
+  .reveal.visible.about-text:hover,
+  .reveal.visible.about-headline:hover,
+  .reveal.visible.projects-title:hover,
+  .reveal.visible.contact-headline:hover,
+  .reveal.visible.contact-copy:hover,
+  .reveal.visible.about-headline.is-popped {
+    transform: translateY(-5px) scale(1.04);
   }
   .reveal-delay-1 { transition-delay: 0.1s; }
   .reveal-delay-2 { transition-delay: 0.2s; }
@@ -819,12 +1023,19 @@
   <div class="hero-grid-bg"></div>
 
   <div class="hero-left">
-    <div class="hero-eyebrow">FUTURE DEVELOPER · GLASGOW</div>
-    <h1 class="hero-name">Omid<br><em>Merati</em></h1>
-    <div class="hero-title-line">
-      <span>Dev<span class="hero-badge">v1.0</span></span>
+    <div class="hero-eyebrow">
+      <span class="eyebrow-group">
+        <span class="eyebrow-line"></span>
+        <span>FUTURE DEVELOPER</span>
+      </span>
+      <span class="eyebrow-separator">·</span>
+      <span class="eyebrow-piece">GLASGOW</span>
     </div>
-    <p class="hero-description">
+    <h1 class="hero-name"><span class="name-piece name-omid">Omid</span><br><em class="name-piece name-merati">Merati</em></h1>
+    <div class="hero-title-line">
+      <span class="name-piece name-dev">Dev<span class="hero-badge">v1.0</span></span>
+    </div>
+    <p class="hero-description pop-click" tabindex="0" role="button">
       I am a 17 year old student who is currently learning Python to build practical tools in automation, AI and problem-solving.
       Turning ideas into working software — from smart assistants to games.
     </p>
@@ -869,7 +1080,7 @@
   <div class="section-label">About me</div>
   <div class="about-grid">
     <div>
-      <h2 class="about-headline reveal">I build things<br>that <em>actually work</em></h2>
+      <h2 class="about-headline reveal pop-click" tabindex="0">I build things<br>that <em>actually work</em></h2>
       <p class="about-text reveal reveal-delay-1">
         I'm a self-driven student who is working towards becoming a future developer I am based in Glasgow, focused on building tools
         that solve real problems. I believe the best code is the kind that actually gets used —
@@ -1041,7 +1252,7 @@
     <h2 class="contact-headline reveal">
       Got a project<br>in <em>mind?</em>
     </h2>
-    <p style="font-size:0.9rem;color:rgba(255,255,255,0.4);max-width:400px;line-height:1.7;" class="reveal reveal-delay-1">
+    <p class="contact-copy reveal reveal-delay-1">
       I'm always open to interesting projects, collaboration, and new opportunities. Let's build something worth talking about.
     </p>
     <div class="contact-links reveal reveal-delay-2">
@@ -1088,9 +1299,24 @@
     requestAnimationFrame(animCursor);
   }
   animCursor();
-  document.querySelectorAll('a,button,.project-card,.stat-block,.tag').forEach(el => {
+  document.querySelectorAll('a,button,.project-card,.stat-block,.tag,.contact-link,.process-item,.skill-row,.eyebrow-group,.eyebrow-piece,.hero-description,.about-text,.about-headline,.projects-title,.contact-headline,.contact-copy,.section-label,.name-piece,.terminal,.stat-chip').forEach(el => {
     el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
     el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+  });
+
+  document.querySelectorAll('.pop-click, .name-piece').forEach(el => {
+    const pop = () => {
+      el.classList.add('is-popped');
+      setTimeout(() => el.classList.remove('is-popped'), 650);
+    };
+
+    el.addEventListener('click', pop);
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        pop();
+      }
+    });
   });
 
   // Project card mouse glow
@@ -1123,6 +1349,28 @@
   setTimeout(() => {
     document.querySelectorAll('.hero .reveal').forEach(el => el.classList.add('visible'));
   }, 200);
+
+  const namePopEls = document.querySelectorAll('.name-piece');
+  const namePopObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.remove('is-popping');
+        e.target.classList.remove('is-ready');
+        void e.target.offsetWidth;
+        e.target.classList.add('is-popping');
+      } else {
+        e.target.classList.remove('is-popping');
+        e.target.classList.remove('is-ready');
+      }
+    });
+  }, { threshold: 0.6 });
+  namePopEls.forEach(el => namePopObs.observe(el));
+  namePopEls.forEach(el => {
+    el.addEventListener('animationend', () => {
+      el.classList.remove('is-popping');
+      el.classList.add('is-ready');
+    });
+  });
 
   // Skill bars
   const barObs = new IntersectionObserver((entries) => {
@@ -1218,7 +1466,7 @@
         c.rot += c.rotSpeed;
         if (Math.abs(c.rot) > 5) c.rotSpeed *= -1;
 
-        c.el.style.transform = `translate(${c.x}px, ${c.y}px) rotate(${c.rot}deg)`;
+        c.el.style.transform = `translate(${c.x}px, ${c.y}px) rotate(${c.rot}deg) scale(var(--pop-scale, 1))`;
         c.el.style.top = '0';
         c.el.style.left = '0';
       });
