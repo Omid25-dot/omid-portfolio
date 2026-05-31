@@ -82,6 +82,18 @@
   body.cursor-hover #cursor { width: 6px; height: 6px; }
   body.cursor-hover #cursor-ring { width: 60px; height: 60px; }
 
+  @media (hover: none), (pointer: coarse), (max-width: 768px) {
+    body,
+    body * {
+      cursor: auto !important;
+    }
+
+    #cursor,
+    #cursor-ring {
+      display: none;
+    }
+  }
+
   /* Nav */
   nav {
     position: fixed; top: 0; left: 0; right: 0;
