@@ -150,20 +150,6 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }
   }
-  @keyframes chip-drift {
-    0%, 100% { transform: translateY(0) rotate(var(--chip-rot, 0deg)); }
-    50% { transform: translateY(-7px) rotate(var(--chip-rot-end, 0deg)); }
-  }
-  @keyframes card-sheen {
-    0% { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
-    18% { opacity: 1; }
-    48% { opacity: 0.65; }
-    100% { transform: translateX(170%) skewX(-18deg); opacity: 0; }
-  }
-  @keyframes soft-breathe {
-    0%, 100% { transform: translateY(0) scale(1); }
-    50% { transform: translateY(-4px) scale(1.015); }
-  }
 
   /* Hero */
   .hero {
@@ -416,10 +402,6 @@
     animation: blink 1s step-end infinite;
   }
   @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-  @keyframes terminal-float {
-    0%, 100% { transform: rotate(1.5deg) translateY(0); }
-    50% { transform: rotate(-0.5deg) translateY(-8px); }
-  }
 
   /* Floating stat chips — position set by JS */
   .stat-chip {
@@ -1038,133 +1020,14 @@
   @media (max-width: 768px) {
     nav { padding: 1.25rem 1.5rem; }
     .nav-links { display: none; }
-    .hero {
-      grid-template-columns: 1fr;
-      min-height: auto;
-      padding-top: 5.25rem;
-    }
-    .hero-left { padding: 3.25rem 1.5rem 1.5rem; }
-    .hero-right {
-      display: flex;
-      min-height: 22rem;
-      padding: 1rem 1.5rem 4.5rem;
-      overflow: hidden;
-    }
-    .hero-visual {
-      max-width: min(100%, 22rem);
-      aspect-ratio: auto;
-    }
-    .terminal {
-      border-radius: 14px;
-      transform: rotate(1.5deg);
-      animation: terminal-float 5.5s ease-in-out infinite;
-      box-shadow: 0 24px 58px rgba(0,0,0,0.22);
-    }
-    .terminal.reveal.visible {
-      animation: terminal-float 5.5s ease-in-out infinite;
-    }
-    .terminal-body {
-      padding: 1.1rem 1rem 1.35rem;
-      font-size: clamp(0.62rem, 2.55vw, 0.72rem);
-      line-height: 1.75;
-    }
-    .terminal-bar { padding: 0.8rem 1rem; }
-    .terminal-title { font-size: 0.58rem; }
-    .stat-chip {
-      position: absolute;
-      font-size: 0.58rem;
-      padding: 0.42rem 0.72rem;
-      white-space: nowrap;
-      animation: chip-drift 3.8s ease-in-out infinite;
-    }
-    #chip-1 { top: 0.35rem; left: 1rem; --chip-rot: -4deg; --chip-rot-end: 4deg; animation-delay: 0.2s; }
-    #chip-2 { top: 3.7rem; right: 0.85rem; left: auto; --chip-rot: 4deg; --chip-rot-end: -4deg; animation-delay: 0.8s; }
-    #chip-3 { top: auto; bottom: 2.7rem; left: 1.4rem; --chip-rot: 3deg; --chip-rot-end: -3deg; animation-delay: 1.35s; }
-    .hero-ctas {
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-    .btn-primary,
-    .btn-secondary {
-      min-height: 44px;
-    }
+    .hero { grid-template-columns: 1fr; }
+    .hero-right { display: none; }
+    .hero-left { padding: 3rem 1.5rem; }
     section { padding: 5rem 1.5rem; }
     .about-grid, .project-grid { grid-template-columns: 1fr; }
     .project-card.featured { grid-column: 1; display: block; }
-    .project-card,
-    .stat-block,
-    .process-item,
-    .contact-link,
-    .tag {
-      transition-duration: 0.32s;
-    }
-    .project-card::after,
-    .stat-block::after,
-    .process-item::after {
-      content: '';
-      position: absolute;
-      inset: -20% auto -20% -45%;
-      width: 38%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
-      pointer-events: none;
-      transform: translateX(-120%) skewX(-18deg);
-    }
-    .project-card.visible::after,
-    .stat-block.visible::after,
-    .process-item.visible::after {
-      animation: card-sheen 1.15s ease 0.2s both;
-    }
-    .stat-block,
-    .process-item {
-      position: relative;
-      overflow: hidden;
-    }
-    .reveal.visible.project-card,
-    .reveal.visible.stat-block,
-    .reveal.visible.process-item {
-      animation: soft-breathe 4.8s ease-in-out infinite;
-    }
-    .reveal.visible.project-card:nth-child(2),
-    .reveal.visible.stat-block:nth-child(2),
-    .reveal.visible.process-item:nth-child(2) {
-      animation-delay: 0.55s;
-    }
-    .reveal.visible.project-card:nth-child(3),
-    .reveal.visible.stat-block:nth-child(3),
-    .reveal.visible.process-item:nth-child(3) {
-      animation-delay: 1.1s;
-    }
-    .project-card.is-touching,
-    .stat-block.is-touching,
-    .process-item.is-touching,
-    .tag.is-touching,
-    .contact-link.is-touching,
-    .btn-primary.is-touching,
-    .btn-secondary.is-touching {
-      animation: none !important;
-      transform: translateY(-6px) scale(1.025);
-    }
-    .project-card.is-touching {
-      border-color: rgba(255,255,255,0.28);
-    }
-    .project-card.is-touching::before {
-      opacity: 1;
-    }
     .process-grid { grid-template-columns: 1fr; }
     .projects-inner, .contact-inner { padding: 0 1.5rem; }
-    .projects-header {
-      align-items: flex-start;
-      flex-direction: column;
-      gap: 1.25rem;
-    }
-    .contact-links {
-      flex-direction: column;
-      gap: 0.85rem;
-    }
-    .contact-link {
-      justify-content: center;
-      min-height: 48px;
-    }
     footer { padding: 1.5rem; flex-direction: column; gap: 0.5rem; text-align: center; }
   }
 
@@ -1174,7 +1037,7 @@
   }
   @media (max-width: 768px) and (orientation: portrait) {
     #tilt-banner {
-      display: none;
+      display: flex;
       position: fixed;
       bottom: 1.5rem;
       left: 50%;
@@ -1206,15 +1069,6 @@
     .hero-left { padding: 2rem 1.5rem; }
     .hero-visual { max-width: 280px; }
     .stat-chip { font-size: 0.6rem; padding: 0.4rem 0.75rem; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      scroll-behavior: auto !important;
-    }
   }
   @keyframes banner-in {
     from { opacity: 0; transform: translateX(-50%) translateY(12px); }
@@ -1564,23 +1418,6 @@
     });
   });
 
-  document.querySelectorAll('.project-card,.stat-block,.process-item,.tag,.contact-link,.btn-primary,.btn-secondary').forEach(el => {
-    const lift = () => el.classList.add('is-touching');
-    const settle = () => el.classList.remove('is-touching');
-
-    el.addEventListener('touchstart', event => {
-      lift();
-      if (el.classList.contains('project-card')) {
-        const touch = event.touches[0];
-        const r = el.getBoundingClientRect();
-        el.style.setProperty('--mx', ((touch.clientX - r.left) / r.width * 100) + '%');
-        el.style.setProperty('--my', ((touch.clientY - r.top) / r.height * 100) + '%');
-      }
-    }, { passive: true });
-    el.addEventListener('touchend', settle, { passive: true });
-    el.addEventListener('touchcancel', settle, { passive: true });
-  });
-
   // Scroll reveal — re-triggers every time element enters view
   const revealEls = document.querySelectorAll('.reveal');
   const obs = new IntersectionObserver((entries) => {
@@ -1648,10 +1485,6 @@
   const heroRight = document.querySelector('.hero-right');
 
   function initChips() {
-    if (window.matchMedia('(max-width: 768px) and (orientation: portrait)').matches) {
-      return;
-    }
-
     const chips = ['chip-1','chip-2','chip-3'].map(id => {
       const el = document.getElementById(id);
       if (!el) return null;
