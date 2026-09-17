@@ -1,0 +1,22 @@
+# Dependencies and build output
+node_modules/
+.next/
+out/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Local secrets; only the empty template belongs in source control
+.env*
+!.env.example
+
+# Local deployment/tooling output
+.vercel/
+*.log
+.DS_Store
+.idea/
+supabase/.temp/
+supabase/.branches/
+playwright-report/
+test-results/
