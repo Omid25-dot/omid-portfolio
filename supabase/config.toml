@@ -12,7 +12,7 @@ major_version = 17
 enabled = true
 [db.seed]
 enabled = true
-sql_paths = ["../database/seed/development.sql"]
+sql_paths = ["../database/seed/development.sql", "../database/seed/phase2-development.sql", "../database/seed/phase3-development.sql"]
 [auth]
 enabled = true
 site_url = "http://localhost:3000"

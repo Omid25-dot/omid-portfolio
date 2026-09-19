@@ -1,4 +1,24 @@
-# Phase 1 setup and verification
+# Application setup and verification
+
+## Phase 3 catalogue setup
+
+After reviewing the linked development target, run the migration dry run before `db push`. Apply `database/seed/phase3-development.sql` after the existing two development seed files. Never seed production. The seed is idempotent; its legacy-ID correction only targets this seed's demo rows, and restrictive rental foreign keys abort deletion if history exists. The 18 September correction was preceded by a hosted read-only check confirming 12 demo assets and zero bookings/blocks.
+
+```sh
+npx supabase@2.117.0 db push --dry-run
+npx supabase@2.117.0 db push
+npx supabase@2.117.0 db query --linked --file database/seed/phase3-development.sql
+node scripts/seed-catalogue-images.mjs --upload
+node scripts/verify-catalogue-hosted.mjs
+```
+
+The image uploader requires server-only service-role credentials and checks that the URL matches the linked project. It writes only the dedicated demo prefix in `equipment-public`. Never put inspection/private evidence into that public bucket; known URLs remain publicly accessible. The generated artwork is explicitly representative demo imagery.
+
+Configure `NEXT_PUBLIC_SERVICE_REGION`, optional real `NEXT_PUBLIC_SUPPORT_EMAIL`, and branding in `.env.local`. Keep `NEXT_PUBLIC_INDEX_SITE=false` for demo environments. Rebuild after changing public environment values. Set the exact application origin for quote-action origin checks.
+
+For Chrome browser verification start the app on localhost:3000, then run `node scripts/verify-catalogue-browser.mjs`. It checks 1440px/390px layouts, loaded images, search parameters, anonymous collection quotes, honest delivery state and empty results; screenshots are in `/tmp/catalogue-screenshots`. Manual checks should also include keyboard navigation, mobile menu/gallery and real authenticated header state. Actual confirmation/recovery email acceptance from Phase 1 remains outstanding.
+
+Supabase advisors flag the intentionally executable, restricted security-definer APIs and the private deny-all mutation-counter table. Review those boundaries when changing RPCs. Enable [leaked-password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) in hosted Auth before launch; the advisor currently reports it disabled.
 
 ## Live verification prerequisites
 
@@ -148,6 +168,16 @@ PLAYWRIGHT_CHANNEL=chrome npm run test:e2e
 Hosted verification has completed signup/default-profile, login/logout, token/session, programmatic recovery/password change, direct RLS role boundaries, real protected-route enforcement, audited mutations and distributed Redis exhaustion/isolation/failure checks. Before declaring full Phase 1 acceptance, manually validate Auth email delivery and confirmation/recovery links in both same-browser and cross-browser flows, plus browser refresh/reopen persistence. Do not replace those remaining checks with test-fixture or programmatic-token success.
 
 ## Manual browser checklist
+
+### Phase 2 backend setup and verification
+
+Apply pending migrations using the same `db push --dry-run` → reviewed `db push` process above. Phase 2 requires `btree_gist` (installed by migration), with no new app credentials. On development only, apply `database/seed/phase2-development.sql` after migration validation. It adds demo policies without overwriting configured values. Do not copy those policies to production without approval. Collection additionally requires an active service area, active collection depot and listed eligible equipment; the existing demo depot deliberately remains inactive.
+
+Run the hosted catalogue assertions with `supabase db query --linked --file tests/hosted/rental-catalog.sql`. The opt-in command `LIVE_RENTAL_VERIFY=rentora-dev node scripts/verify-rental-hosted.mjs` verifies real authenticated pricing/RLS/history/audit and concurrent booking/maintenance RPCs. It checks the configured URL against the linked project, creates isolated marked fixtures, and removes those fixtures in `finally`. Audit evidence remains. It uses administrative test-user creation without email sends; it is not an email-delivery test. Never run this opt-in verifier against production.
+
+Schedule `public.expire_booking_holds()` through a trusted service-role job or database scheduler (for example once per minute); no browser role can execute it. No scheduled job is provisioned by this phase. Each call handles up to 100 assets, so monitor/backfill if volume needs more calls. Opportunistic expiry during booking acquisition and the exclusion constraint protect correctness even if the scheduled job is unavailable. The original hold expiry persists through approval/payment-pending transitions; missing policy settings fail safely.
+
+### Remaining Phase 1 browser checklist
 
 Use disposable development accounts and the configured development origin. Record the account UUIDs and results without recording passwords, tokens, reset links, or secret keys.
 

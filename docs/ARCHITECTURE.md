@@ -1,6 +1,20 @@
 # Architecture
 
-Status: Phase 1 runnable application and security foundation implemented locally. Hosted Supabase/Redis and full browser verification are outstanding. PRODUCT_SPEC.md remains authoritative. Booking, pricing, payments, delivery, inspections and payouts below are architectural contracts for future phases, not implemented features. See IMPLEMENTATION_STATUS.md for verified evidence and SETUP.md for configuration.
+Status: Phase 3 public catalogue implemented over the verified Phase 2 backend. Phase 1 actual email/recovery acceptance remains outstanding. PRODUCT_SPEC.md remains authoritative. Checkout, payments, Identity, delivery quoting, inspections and payouts remain deferred. See IMPLEMENTATION_STATUS.md and SETUP.md for evidence/configuration.
+
+## Phase 3 public catalogue
+
+`lib/catalogue/server.ts` uses only the anonymous key. PostgreSQL `catalogue_search`/`catalogue_detail` RPCs return explicit customer fields through `private.catalogue_item`: no raw equipment grants, ownership, contacts, commission, serials, internal references or private settings. Eligibility requires listed, non-archived equipment and active category/location/service area. Maintenance/unavailable assets are excluded; reserved/on-hire assets may appear with date-specific availability. Deliberate security-definer reads have fixed empty search paths and explicit grants; private helpers are not publicly executable.
+
+Search is server-rendered and URL-driven, with SQL keyword/category/postcode-area/price/fulfilment/date filters and 12-item pagination. Zod validates input and results. Postcode-area matching is a catalogue coverage filter, not a delivery-price promise. Flexible specifications and allowlisted customer details render without equipment-specific columns. Reviews remain deferred; ratings are never invented.
+
+Public availability calls the extracted Phase 2 private core; the original authenticated RPC retains its role gate. Public quotes reuse the Phase 2 SQL pricing engine with internal ownership/commission fields removed. Both wrappers require catalogue eligibility. The server action enforces validation, same origin and Redis rate limits. Read RPCs are deliberately directly callable; application Redis limits do not cover direct Data API requests, so production provider quotas/abuse monitoring remain necessary. Date selection never reserves an asset. End dates remain exclusive. Collection quotes use pennies; delivery returns quote-required without an invented fee.
+
+`equipment-public` contains only customer-safe catalogue assets. Storage metadata listing requires an eligible image reference; client writes/deletes are not granted. Public bucket bytes remain retrievable by URL even after unlisting: unlisting is not media revocation. Private evidence must never enter this bucket. Next Image restricts remote sources to the configured Supabase public-bucket path and uses responsive optimisation plus a local fallback.
+
+The development seed creates 12 marked demo assets, a demo location/service area and an internal owner. Original representative illustrations upload only to `catalogue/demo-phase3/`. They are deliberate placeholders, not photography. Ordered multi-image galleries are supported; current seeds have one image per asset. Production photos, commercial policies and rates are still required.
+
+Shared catalogue components provide navigation, cards, search, gallery and quote panels. Branding, region, support and indexing are configurable; development defaults to noindex. Canonical/Open Graph metadata covers public pages. Informational/legal pages honestly state remaining setup. No checkout or marketplace UI is included.
 
 ## Application shape
 
@@ -40,7 +54,7 @@ Stripe → verified webhook handler → idempotent transactional database update
 | `public` | Static application assets; inventory photography belongs in Storage |
 | `docs` | Permanent specification, architectural decisions and implementation status |
 
-Phase 1 populates auth/security/UI modules and minimal public/account/admin routes. Deferred feature directories retain `.gitkeep` only. `supabase/migrations` is a symlink to canonical `database/migrations`; Supabase CLI configuration references development seeds and email templates. No booking/payment schema or equipment catalogue UI is implemented.
+Phase 1 populates auth/security/UI modules and minimal account/admin routes. Phase 2 adds rental contracts/services and SQL domain functions. Phase 3 adds `components/catalogue`, `lib/catalogue`, public routes and anonymous quote actions. `supabase/migrations` is a symlink to canonical `database/migrations`. Checkout, payment and operational UI remain deferred.
 
 ## Runtime and dependencies
 
@@ -74,13 +88,47 @@ Use SQL `date` for hire-date intent and `timestamptz` for instants. Initial oper
 
 ## Availability and booking transactions
 
-Use a shared reservation ledger for booking holds and availability blocks, linked to their source records. Active time ranges use a PostgreSQL exclusion constraint on equipment and overlapping ranges. Transactional database functions lock the equipment row, check operational status and active reservations, calculate/validate persisted pricing inputs, then write reservation, booking snapshot and history together. All paths that reserve equipment or change availability must use the same locking/integrity discipline. Sequential independent HTTP database calls do not constitute a transaction.
+Phase 2 uses the booking row itself as the reservation record, with a generated half-open `daterange` and `capacity_reserved` flag. A GiST exclusion constraint (`btree_gist`) rejects overlapping reserved bookings for one equipment UUID, including writes that bypass the RPC availability precheck. This replaces the planned separate ledger to avoid duplicate reservation state. Availability blocks are separate because maintenance must be recordable even over an existing reservation.
 
-Validate booking transitions against the §16 state machine and capability rules. Approval/payment-pending/confirmed/checked-out periods reserve capacity; the precise REQUESTED hold duration and expiry policy must be defined before booking implementation. A dispute must not automatically free equipment that is still out. Keep operational asset status separate from future date availability. Buffers can expand reservation ranges without changing the customer's billable dates.
+Every booking/block mutation takes the same equipment-row lock; operational equipment updates inherently lock that row. `create_rental_booking` verifies the current active profile, applies the database rate limit, locks equipment, expires old holds, validates dates/fulfilment, computes authoritative pricing/commission, checks bookings and blocks, and inserts the snapshot. Triggers append status history and audit in the same transaction. An audit failure rolls back the reservation. PostgreSQL/PostgREST uses READ COMMITTED; the hosted concurrency suite exercises independent simultaneous HTTP transactions. No external provider call occurs while locks are held.
 
-Expired holds must be released by an idempotent scheduled process and transactionally re-evaluated when acquiring capacity. Maintenance must prevent new hires and flag existing affected bookings without silently cancelling them. Conflicting maintenance records and existing reservations must remain visible even when the existing reservation prevents inserting a second blocking ledger entry. Concurrent booking, payment confirmation and maintenance tests are required before release.
+REQUESTED, APPROVED and PAYMENT_PENDING reserve capacity until their original `hold_expires_at`; approval does not extend the hold. The required database `booking_hold_minutes` setting is demo-seeded to 30 and bounded to 1–1440. Production policy needs business approval. CONFIRMED/CHECKED_OUT have no timed hold. RETURNED, COMPLETED, CANCELLED and DECLINED release capacity; DISPUTED preserves the preceding capacity state. Holds are expired opportunistically under the equipment lock before creation/transitions; availability reads disregard expired holds. `expire_booking_holds()` is an idempotent service-role-only sweeper, capped at 100 assets per call. Scheduled invocation remains deployment configuration, so dormant expired rows can remain marked reserved until the next sweep or equipment acquisition.
 
-## Payments, identity and deposits
+Both dated maintenance blocks and equipment-wide MAINTENANCE/UNAVAILABLE/ARCHIVED statuses prevent new reservations. `booking_availability_conflicts` is a security-invoker staff projection showing affected booking IDs without changing customer reservations. Overlapping block entries are permitted. `rental_availability` returns generic unavailable ranges/reasons only, never customer IDs, booking IDs, owner data or block notes. Payment-confirmation races will be tested when the authoritative payment writer exists; Phase 2 cannot confirm payment.
+
+## Implemented Phase 2 schema and interfaces
+
+`202609180001_rental_domain.sql` adds `bookings`, `booking_status_history` and `availability_blocks`, all with RLS, explicit grants, foreign keys, checks and query/range indexes. `202609180002_operational_conflicts.sql` extends the invoker-security conflict report to equipment-wide unavailability. Phase 1 migrations are unchanged. No payment, verification or payout table is required by the current foreign keys, so these domains remain deferred.
+
+Bookings contain random UUID primary keys and independent `RNT-` references with 128 random bits, equipment/customer references, exclusive hire dates, status, fulfilment/address fields, GBP penny amounts, deposit, total, ownership/commission snapshots, a versioned pricing JSON snapshot, hold/capacity fields, cancellation metadata and timestamps. Owner foreign keys restrict deletion to preserve history. A trigger rejects changes to identity, dates, fulfilment and financial/ownership snapshots, including from ordinary service-role UPDATEs. History contains previous/new state, actor, timestamp and optional operational reason; customer grants omit actor/reason. All transitions and creation write audit/history atomically.
+
+The raw booking table deliberately has **column SELECT grants**, not table SELECT for authenticated users. Customers can select only their own permitted booking fields; staff/admin can read the same safe columns across bookings. Ownership type, owner ID, commission, owner net and full pricing JSON are not selectable by any browser role. Internal financial inspection requires a future explicitly authorised service projection; Phase 2 does not grant a broad finance API. There are no authenticated INSERT/UPDATE/DELETE grants on any new table. Privileged maintenance credentials remain trusted administrative capabilities.
+
+Exposed SQL RPCs have fixed empty search paths, schema-qualified references, no anonymous EXECUTE, active-profile checks and no caller-supplied customer/actor/price/commission fields. Mutating RPCs also use the existing PostgreSQL actor limiter, so calling them directly cannot bypass database authorization or calculation. Next server actions in `services/rental-actions.ts` add verified Supabase identity, role checks for operations, strict Zod input parsing, same-origin checks and distributed Redis limiting. No service-role client is used for ordinary application requests. Read actions return explicit parsed projections; Supabase/SQL errors map to safe conflict/configuration/permission messages.
+
+Pricing has **one authoritative implementation**, `private.rental_quote`, called by both the safe quote RPC and booking creation. The TypeScript pricing module is a validated adapter, not a second arithmetic engine. Dates are SQL dates in `[start,end)`, so 22–24 September is two days and adjacent hires do not overlap. Day subtraction never divides a timezone-dependent timestamp duration by 24 hours. Duration is 1–366 days further restricted by required min/max settings; past starts use the Europe/London calendar day. Operational buffers are deferred and would require a separate reserved range, leaving immutable billable dates intact.
+
+Collection requires a listed usable asset, collection eligibility and an active collection location/service area. Delivery currently returns `DELIVERY_QUOTE_REQUIRED`; it is never priced as free delivery. Complete seven-day blocks use the configured weekly rate plus daily-rate remainder, capped at all-daily pricing; a partial week is not rounded up. Service fee comes from a required setting; discounts are not implemented and remain zero. Tax requires explicit `rental_tax_policy = no_tax_configured` and GBP configuration. This is an explicitly marked development policy, not a VAT exemption claim or approved live tax treatment. Missing/invalid settings fail closed. All arithmetic uses integer/bigint pennies, with a signed-32-bit total cap before persistence.
+
+Third-party commission resolves equipment override → owner override → global default (zero is a valid override). Only rental subtotal is commissionable; refundable deposits, service fees and delivery are excluded. Fractional pennies round half-up once using bigint arithmetic. Company-owned bookings store null owner/rate and zero commission/net, creating no owner liability. Booking snapshots preserve the chosen rates, weekly rule, timezone, amounts, tax policy, commission basis/rate and owner identity internally.
+
+The structural transition graph is:
+
+| From | Permitted next state |
+| --- | --- |
+| REQUESTED | APPROVED, DECLINED, CANCELLED |
+| APPROVED | PAYMENT_PENDING, CANCELLED |
+| PAYMENT_PENDING | CONFIRMED, CANCELLED |
+| CONFIRMED | CHECKED_OUT, CANCELLED, DISPUTED |
+| CHECKED_OUT | RETURNED, DISPUTED |
+| RETURNED | COMPLETED, DISPUTED |
+| COMPLETED | DISPUTED |
+| DISPUTED | Recorded preceding state only |
+| DECLINED, CANCELLED | None |
+
+Staff may perform ordinary operational transitions; cancellation, disputes and completion require admin/super-admin. Customer status writes are unavailable; customer cancellation remains a later supported workflow. Decline/cancellation/dispute require a reason. Approval, payment-pending and checkout recheck operational availability. The Phase 2 RPC explicitly rejects CONFIRMED and COMPLETED with `INTEGRATION_REQUIRED`: real payment/verification and return-inspection prerequisites have not been implemented, and admins cannot fabricate them. The structural graph is ready for future trusted integration writers, which must add those authoritative gates and their race tests. There is no payment/Identity success simulation.
+
+## Future payments, identity and deposits
 
 Services create Stripe operations using server-side amounts and idempotency keys. Provider calls occur outside database transactions; persist operation intent and reconcile failures/retries. Never hold a database lock while waiting for Stripe. Signature-verified webhooks are authoritative for payment confirmation and provider verification updates; a success redirect only displays persisted status.
 
@@ -107,11 +155,11 @@ Test domain rules independently, database RLS/grants and concurrency against rea
 ## Assumptions and unresolved decisions
 
 - `/docs` means this repository's `docs/` directory, not the machine's filesystem root.
-- Phase 1 adds only the authorised foundation and initial domain schema. The legacy HTML and archive remain untouched and outside the App Router application.
+- Phase 2 adds only the authorised rental backend. The legacy HTML and archive remain untouched and outside the App Router application.
 - No brand, company identity, production rates, VAT/tax policy, cancellation policy, commission default or legal/insurance assurances are approved by demo examples.
 - One asset per booking and exclusive return dates are implementation assumptions inferred from the examples; document any agreed change before building booking logic.
-- Booking approval mode, hold timeout, operational hours, deposit strategy and refund/dispute handling require explicit policy choices before their implementation.
-- No hosted integration accounts, secrets or deployment were configured. Embedded PostgreSQL and synthetic-provider HTTP tests do not certify live Supabase or Redis integration.
+- Manual approval and a configurable expiring hold are the Phase 2 backend policy; demo settings require business approval before trading. Operational hours, buffers, tax, deposit strategy and refund/dispute settlement remain future decisions.
+- Hosted development Supabase and Redis are configured and verified. Email/browser acceptance from Phase 1 remains outstanding; embedded PostgreSQL and synthetic-provider HTTP tests alone do not certify those flows.
 
 ## Implemented Phase 1 database boundaries
 

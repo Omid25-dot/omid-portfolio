@@ -1,10 +1,54 @@
 # Implementation status
 
-Last updated: 17 September 2026.
+Last updated: 18 September 2026.
 
 ## Current phase
 
-**Phase 1 — runnable application foundation and security layer: code complete and verified against the configured hosted development services; final email/browser acceptance remains manual.** Phase 2 has not started. This is not a completed rental application, and PRODUCT_SPEC §§91–92 remain the full-build acceptance criteria.
+**Phase 3 — customer-facing catalogue implemented and verified.** Phase 4 has not started. Phase 1's actual confirmation/recovery email acceptance remains outstanding. This is not a completed rental application; PRODUCT_SPEC §§91–92 remain the full-build acceptance criteria.
+
+### Phase 3 completion and evidence — 18 September 2026
+
+- Built `/`, `/equipment`, `/categories`, `/category/[slug]`, `/equipment/[slug]`, `/how-it-works`, `/delivery`, `/help`, `/policies`. Added responsive navigation with server-verified account/admin visibility, public footer, metadata/canonicals, loading/error/empty/reset states and mobile booking CTA.
+- Added reusable containers, sections, cards, category icons, gallery, image fallback, search/filter forms, price/availability/no-review displays and quote summary. Existing brand configuration is reused. Original demo illustrations are deliberately labelled; no borrowed photographs, fabricated reviews or insurance claims.
+- Catalogue is backed by PostgreSQL, filtered/paginated on the server with shareable URL state. Public projections exclude owner identity, ownership, commissions, private references and settings. No customer account is required to browse/check quotes.
+- Anonymous availability reuses Phase 2's core. Collection quotes reuse authoritative SQL pricing; selecting dates does not create bookings. Delivery returns a clear quote-required state. Checkout is visibly disabled with an explanation.
+- Applied `202609180003_public_catalogue.sql` after a clean hosted dry run. Added customer detail JSON, service-area postcode arrays, a catalogue index, restricted read RPCs and public-image Storage policy/bucket. Existing raw-table/RLS protections remain intact.
+- Applied the safe demo seed and uploaded 12 original images to the dedicated prefix. Browser verification caught nonstandard deterministic seed UUIDs; corrected the seed and its disposable hosted records after checking that all 12 had zero bookings/blocks. Added response-schema validation to the database regression test. Rental-history foreign keys protect the cleanup.
+
+Modules/files: `components/catalogue/*`, `lib/catalogue/*`, `services/public-rental-actions.ts`, public route directories, shared layouts/styles, `next.config.ts`, `.env.example`, `database/seed/phase3-development.sql`, `scripts/{seed-catalogue-images,verify-catalogue-hosted,verify-catalogue-browser}.mjs`, `tests/integration/catalogue.test.ts`, `tests/unit/catalogue.test.ts`, `tests/fixtures/storage.sql`, original `public/demo-equipment` artwork and local fallback. Existing database tests load the Storage fixture. AGENTS, architecture and setup were updated; PRODUCT_SPEC is unchanged.
+
+Verification:
+
+- All **37 unit/database checks passed**, including actual migrations, anonymous projection boundaries, hidden/maintenance exclusion, date conflicts/adjacency, authoritative quote/tampering, Storage isolation and Phase 1/2 regressions.
+- TypeScript and ESLint passed. `npx next build --webpack` passed with all expected routes. All **8 existing HTTP security regressions passed** using the explicitly synthetic Auth fixture (account/admin/roles/recovery and privileged-action denial); hosted checks are separate.
+- Hosted anonymous checks passed for catalogue/slug/category/keyword/postcode, availability, price, rejected total injection, private-table denial and 12 real public image responses. These checks used the anonymous key, not service-role access.
+- Real Chrome automation passed at **1440px and 390px**: homepage/catalogue/category/detail, loaded images, no horizontal overflow, shared search parameters, collection quote, honest delivery error/no incomplete total and empty results. Screenshots are in `/tmp/catalogue-screenshots`. This does not replace Phase 1 actual email/recovery tests. In-app browser startup failed; installed Chrome succeeded.
+- Supabase security advisors ran. Findings were the intentionally executable security-definer APIs (five anonymous and twelve authenticated), the private deny-all rate-limit table (informational), and disabled leaked-password protection. RPC permissions/search paths and result boundaries are covered by the tests. No RLS/grants were weakened to silence advisors. Auth leaked-password protection remains a pre-launch configuration task.
+
+Remaining limitations: one demo image per item although ordered multi-image galleries are supported; replace illustrations with licensed product photography before launch. Reviews, checkout, payments/Identity, real delivery quoting, operations, inspections and payouts remain deferred. Catalogue postcode matching is area-level, not a delivery guarantee. Public image URLs are not revoked by unlisting. Direct public RPC traffic needs provider quotas/abuse monitoring; Redis guards application quote requests only. Real commercial settings, policies, support contact, hold scheduling and Phase 1 email acceptance remain outstanding. Development pages default to noindex.
+
+### Phase 2 completion and evidence — 18 September 2026 (historical)
+
+- Added immutable bookings with random public references, exclusive hire dates, financial/ownership snapshots, cancellation/hold metadata, status history and availability blocks.
+- Implemented server actions and reusable validated pricing/availability adapters. PostgreSQL is the single authoritative pricing implementation and calculates amounts inside the booking transaction. Only equipment/date/fulfilment input is accepted, never client totals or actor/owner fields.
+- Implemented complete state graph, guarded operational transitions, atomic history/audit and payment/inspection integration gates. Collection pricing is available. Delivery requires a real rule/manual quote and cannot silently become free delivery.
+- Added GiST exclusion protection plus common equipment-row locking for booking/block writers. Expiring request/approval/payment holds release capacity opportunistically; a service-role-only sweeper is available for scheduled cleanup.
+- Added RLS and explicit safe-column grants, protecting owner/commission/pricing JSON even from direct authenticated Data API requests. Customers cannot access other bookings/history, change totals or set arbitrary states. Operational conflict reporting preserves bookings affected by maintenance.
+- Added explicit demo-only min/max hire, hold, service-fee and tax-policy settings. These are not approved production commercial terms. No equipment inventory, payment, verification, inspection, delivery or payout feature was added.
+
+New/changed modules: `lib/booking/contracts.ts`, `lib/pricing/server.ts`, `lib/availability/server.ts`, `services/rental-actions.ts`; migrations `202609180001_rental_domain.sql` and `202609180002_operational_conflicts.sql`; `database/seed/phase2-development.sql` and the local Supabase seed configuration; `tests/integration/rental.test.ts`, `tests/unit/rental.test.ts`, `tests/hosted/rental-catalog.sql`, `scripts/verify-rental-hosted.mjs`. Existing database tests now load `btree_gist` and assert RLS on all 13 public tables. Phase 1 migrations and PRODUCT_SPEC are unchanged. AGENTS, architecture and setup guidance were updated.
+
+Hosted verification: both migrations applied to the existing linked development project after separate clean dry runs. Final catalogue checks passed for RLS, policies, safe column grants, indexes, exclusion constraint and restricted function execution/search paths. The hosted script passed safe pricing, four simultaneous overlapping bookings (exactly one winner), back-to-back dates, cross-customer/owner-field denial, immutable snapshots, valid/invalid transitions, history/audit, maintenance conflicts, booking-versus-block concurrency and equipment-wide maintenance conflict reporting. Isolated fixtures were removed; audit records remain (deleted fixture actors become null by the existing foreign-key policy). No production project was modified.
+
+Validation: `npm run typecheck` and `npm run lint` passed; `npx next build --webpack` passed. All **29 unit/database tests** passed, including the full state graph, actual SQL calculations, commission precedence, immutable snapshots, raw exclusion constraint, audit rollback, expiry and security regressions. All **8 HTTP security tests** passed using the existing synthetic-provider fixture. Hosted catalogue and live concurrency/permission assertions passed separately against real Supabase; embedded PostgreSQL is not claimed as concurrency proof. No interactive browser test was performed for this backend-only phase.
+
+Remaining configuration/risks:
+
+- Schedule the service-role-only `expire_booking_holds()` sweep for prompt idle-hold status updates. Booking acquisition remains protected without a scheduler and availability ignores expired holds.
+- Approve actual hold duration, service fees, hire limits and tax treatment before trading. Current values are clearly marked development settings.
+- CONFIRMED and COMPLETED transitions intentionally fail until authoritative payment/verification/inspection integrations exist. No fake successes or owner payouts are created.
+- At Phase 2 completion, catalogue/UI remained deferred; the Phase 3 entry above supersedes that scope. Delivery quotations, buffers, Stripe/Identity and inspection/payout workflows remain deferred.
+- Phase 1 real email delivery and browser recovery/persistence checks remain manual; no new browser UI was added in Phase 2.
 
 ### Live integration verification attempt — 17 September 2026
 
@@ -30,7 +74,7 @@ Live verification status:
 
 The Phase 1 request explicitly extended the original roadmap to include initial categories, location/service-area, owner and equipment schema. Those migrations are included; no catalogue, booking, payment, Identity, delivery, inspection, payout or marketplace feature was implemented.
 
-## Completed functionality
+## Phase 1 completed functionality (historical record)
 
 - Runnable Next.js App Router application with exact dependency versions, a lockfile, Node 24 target, TypeScript, Tailwind, ESLint, development/production scripts and safe baseline headers.
 - Separate Supabase browser, authenticated server and server-only service-role helpers. Routine actions retain user/RLS scope. No secrets are committed and missing configuration does not fabricate connectivity.
@@ -42,7 +86,7 @@ The Phase 1 request explicitly extended the original roadmap to include initial 
 - Private transactional audit foundation, a working admin access-review action, and a super-admin role-change action with confirmation, server/SQL permission checks, actor/target locks, self-change prohibition and atomic before/after audit records.
 - Clearly marked development categories, Glasgow service area/depot, an internal demo third-party owner and settings. No large equipment inventory or Auth users/passwords seeded.
 
-## Files and modules added or changed
+## Phase 1 files and modules (historical record)
 
 | Area | Files/modules |
 | --- | --- |
@@ -58,7 +102,7 @@ The Phase 1 request explicitly extended the original roadmap to include initial 
 
 The complete master PRODUCT_SPEC remains unchanged. Legacy tracked HTML/archive/editor files remain unchanged. No git commit was created.
 
-## Database migrations and permissions
+## Phase 1 database migrations and permissions (historical record)
 
 1. `202609170001_foundation.sql`: creates 10 public tables: profiles, categories, service_areas, locations, owners, equipment, equipment_images, equipment_specifications, platform_settings, audit_logs. Includes UUIDs, timestamps/triggers, Auth profile creation/backfill, ownership/money/status checks, foreign keys, uniqueness/indexes, RLS and explicit grants. Auth metadata cannot supply roles/status.
 2. `202609170002_privileged_actions.sql`: private transactional audit helper, authenticated role-change/access-review functions, private distributed mutation counter table/function. RPCs check current active roles; callers cannot supply arbitrary actor IDs or audit payloads.
@@ -67,7 +111,7 @@ All public tables and the private counter table have RLS. Anonymous users can re
 
 The Supabase CLI migration directory is a symlink to `database/migrations`; no duplicate migration source exists. Hosted migrations and policies are verified. Docker-based local Supabase remains unverified because Docker is unavailable on this host.
 
-## Tests/checks and evidence
+## Phase 1 tests/checks and evidence (historical record)
 
 | Check | Result and scope |
 | --- | --- |
@@ -113,8 +157,6 @@ Embedded PostgreSQL tests execute the migration SQL against PGlite with a minima
 - Public brand uses a central environment configuration. Database platform settings and business-policy values are private; their future UI/read projections are not implemented.
 - Demo rates/commissions/settings are not approved live commercial terms. Approval, hire-duration/buffer, cancellation, tax and deposit policies remain unresolved for later implementation.
 
-## Recommended Phase 2
+## Recommended Phase 4
 
-After the remaining email/browser checklist is accepted, implement **Phase 2: database/domain model completion** in PRODUCT_SPEC §90 order: reservation/availability and booking models, legal state-transition rules, immutable financial/ownership snapshots, remaining supporting constraints/RLS/indexes and concurrency tests. Establish the future safe public equipment projection without exposing owner fields. Finalise date/hold and pricing-policy assumptions before those domains are used.
-
-The database model can prepare later payment/verification/delivery/inspection/payout records, but do not start their customer workflows or marketplace functionality automatically. Equipment catalogue, details and search follow the domain model as separate authorised phases.
+Implement the customer booking creation/account journey over the existing rental domain: authenticated date/fulfilment confirmation, immutable server quote, transactional reservation, clear booking status and own-booking detail/history. Resolve real commercial policies and hold scheduling first. Obtain explicit scope approval before adding Stripe payments/Identity or operational interfaces; never fake a confirmed booking. Finish outstanding Phase 1 email/recovery acceptance before real customer bookings. Do not start Phase 4 automatically.

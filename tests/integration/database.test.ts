@@ -2,11 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
+import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
 
 // Actual embedded PostgreSQL execution, with a minimal Auth/JWT fixture.
 // This does NOT test hosted Supabase Auth, PostgREST, email or service connectivity.
 test('migrations, grants, RLS, ownership constraints and atomic audit', async t => {
- const db = new PGlite();
+ const db = new PGlite({ extensions: { btree_gist } });
  const ids = {
   customer:'20000000-0000-4000-8000-000000000001', other:'20000000-0000-4000-8000-000000000002',
   staff:'20000000-0000-4000-8000-000000000003', admin:'20000000-0000-4000-8000-000000000004',
@@ -16,6 +17,7 @@ test('migrations, grants, RLS, ownership constraints and atomic audit', async t 
  create schema auth; create table auth.users(id uuid primary key, raw_user_meta_data jsonb default '{}');
  create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
  grant usage on schema auth to anon,authenticated,service_role; grant execute on function auth.uid() to anon,authenticated,service_role;`);
+ await db.exec(await readFile('tests/fixtures/storage.sql','utf8'));
  for (const file of (await readdir('database/migrations')).filter(v=>v.endsWith('.sql')).sort()) await db.exec(await readFile(`database/migrations/${file}`,'utf8'));
  await db.exec(await readFile('database/seed/development.sql','utf8'));
  // Idempotent seed should neither duplicate nor overwrite later business settings.
@@ -36,7 +38,7 @@ test('migrations, grants, RLS, ownership constraints and atomic audit', async t 
  }
  await t.test('all tables enable RLS and public only gets active categories',async()=>{
   const tables = await db.query<{relrowsecurity:boolean}>("select relrowsecurity from pg_class join pg_namespace n on n.oid=relnamespace where n.nspname='public' and relkind='r'");
-  assert.equal(tables.rows.length,10); assert.ok(tables.rows.every(x=>x.relrowsecurity));
+  assert.equal(tables.rows.length,13); assert.ok(tables.rows.every(x=>x.relrowsecurity));
   const categories=await asRole('anon',null,'select * from public.categories'); assert.equal(categories.rows.length,6);
   await assert.rejects(asRole('anon',null,'select * from public.profiles'));
   for (const table of ['owners','audit_logs','platform_settings','equipment','equipment_images','equipment_specifications','locations','service_areas']) await assert.rejects(asRole('anon',null,`select * from public.${table}`));

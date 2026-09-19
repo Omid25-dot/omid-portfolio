@@ -23,4 +23,4 @@ Next.js App Router, React, TypeScript, Tailwind CSS, Supabase PostgreSQL/Auth/St
 
 ## Current scope
 
-Phase 1 implements the runnable Next.js/auth/security foundation and initial domain migrations. Hosted Supabase/Redis setup and browser/live integration acceptance remain outstanding; see IMPLEMENTATION_STATUS.md and SETUP.md. Do not proceed to Phase 2 without authorisation. Legacy root HTML is not the rental application. Never use test fixtures as production providers. Read current Next.js package documentation when touching framework APIs.
+Phase 3 adds the public catalogue, responsive customer pages, safe anonymous projections, public imagery and Phase 2 availability/quotes. Checkout and operations remain deferred. Phase 1 actual email/recovery acceptance remains outstanding. See IMPLEMENTATION_STATUS.md for evidence. Do not proceed to Phase 4 without authorisation. Legacy root HTML is not the rental application. Never use test fixtures as production providers. Read current Next.js package documentation when touching framework APIs.
