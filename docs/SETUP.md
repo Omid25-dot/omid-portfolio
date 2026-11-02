@@ -1,5 +1,30 @@
 # Application setup and verification
 
+## Phase 4 booking requests
+
+Apply `20260919121806_customer_booking_flow.sql` using the existing clean-dry-run-then-push procedure. No Phase 4 seed is required. The migration adds the private idempotency/acknowledgement table and guarded customer read/request/cancel functions; it reuses the Phase 2 reservation engine. No new external service or environment secret is required: signed reviews use the existing server-only `SECURITY_HMAC_SECRET` with a separate purpose prefix. Rotating that key invalidates outstanding review/recovery tokens.
+
+Configure the existing email templates, exact site origin and redirect allowlist. Signup and recovery preserve one safe booking intent for one hour in the same browser. Opening an email on another device loses this convenience and safely returns to Account; equipment/dates can be selected again. Real confirmation/recovery email delivery and cross-browser behaviour remain a manual Phase 1 acceptance check, not a claimed automated pass.
+
+Manual review:
+
+1. Open equipment, select available dates and collection, check price, then choose Request booking.
+2. Sign in or create/confirm an account in the same browser. Confirm that dates survive and a fresh quote appears.
+3. Review contact details, deposit and unpaid-request acknowledgement. Submit once; inspect the random reference, REQUESTED status and hold deadline.
+4. Open Account → My bookings → booking detail. Check history, then confirm withdrawal while still REQUESTED.
+5. Try the reference signed out and as another customer: no booking information should be exposed.
+6. Test actual signup/recovery email links separately; do not mark delivery verified merely because a programmatically generated token works.
+
+The development-only live test creates isolated equipment, Auth users, requests and a public test image, then removes them in `finally` while retaining audit. Run against the linked development project with the local app on localhost:3000:
+
+```sh
+LIVE_RENTAL_VERIFY=rentora-dev node scripts/verify-customer-booking-hosted.mjs
+```
+
+It uses real hosted services and installed Chrome at desktop/mobile sizes. Programmatically confirmed disposable accounts are used; it does not test email delivery. Screenshots go to `/tmp/booking-screenshots`. Never point this script at production.
+
+Before live trading, schedule the existing service-role-only `expire_booking_holds()` cleanup (bounded batches; repeat as needed), approve hold/commercial policies, replace demo assets/locations and supply a real support contact. Expired holds already stop blocking availability without a scheduler, but stored statuses may lag. Payments and Identity are not implemented, so requests cannot be treated as confirmed paid hires.
+
 ## Phase 3 catalogue setup
 
 After reviewing the linked development target, run the migration dry run before `db push`. Apply `database/seed/phase3-development.sql` after the existing two development seed files. Never seed production. The seed is idempotent; its legacy-ID correction only targets this seed's demo rows, and restrictive rental foreign keys abort deletion if history exists. The 18 September correction was preceded by a hosted read-only check confirming 12 demo assets and zero bookings/blocks.

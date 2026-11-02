@@ -1,0 +1,56 @@
+/* Original interactive mesh background for the live-design portfolio. */
+body { position: relative; isolation: isolate; }
+.ambient-background {
+  position: fixed; inset: 0; z-index: -1; overflow: hidden;
+  pointer-events: none; background: #f4f1eb;
+}
+.ambient-blob {
+  position: absolute; width: 75%; height: 90%; border-radius: 45%;
+  filter: blur(70px); opacity: .72;
+  translate: calc(var(--ambient-x, 0px) * var(--depth, 1)) calc(var(--ambient-y, 0px) * var(--depth, 1));
+  animation: ambient-flow 22s ease-in-out infinite alternate paused;
+}
+.ambient-blob.aqua { right: -28%; top: -26%; background: radial-gradient(ellipse, #96dfe9, #b0e8e77a 45%, transparent 70%); }
+.ambient-blob.violet { right: -8%; bottom: -43%; background: radial-gradient(ellipse, #bdb0f7, #d6c9f77a 45%, transparent 70%); animation-delay: -12s; animation-duration: 28s; }
+.ambient-blob.lime { left: -29%; bottom: -38%; background: radial-gradient(ellipse, #d2ed9b, #e6f0bc80 45%, transparent 70%); animation-delay: -7s; animation-duration: 25s; }
+.ambient-veil { position: absolute; inset: 0; background: linear-gradient(90deg, #f4f1eb99, transparent 70%); }
+.ambient-shape {
+  position: absolute; color: #516c81; opacity: .17;
+  translate: calc(var(--ambient-x, 0px) * var(--depth, 1)) calc(var(--ambient-y, 0px) * var(--depth, 1));
+  animation: ambient-float 13s ease-in-out infinite alternate paused;
+}
+.ambient-shape.code { top: 19%; left: 46%; font: 500 36px 'JetBrains Mono', monospace; color: #6e6b9a; }
+.ambient-shape.braces { bottom: 12%; right: 8%; font: 400 60px 'JetBrains Mono', monospace; animation-delay: -5s; color: #7576a4; }
+.ambient-shape.ring { top: 13%; right: 9%; width: 120px; height: 120px; border: 1px solid #558d98; border-radius: 50%; animation-delay: -8s; }
+.ambient-shape.square { bottom: 13%; left: 9%; width: 80px; height: 80px; border: 1px solid #83945a; border-radius: 16px; animation-delay: -3s; }
+.ambient-shape.dots { top: 48%; right: 45%; width: 55px; height: 55px; background: radial-gradient(circle, #657c91 2px, transparent 3px); background-size: 12px 12px; animation-delay: -6s; }
+body.ambient-motion .ambient-blob, body.ambient-motion .ambient-shape { animation-play-state: running; }
+body.ambient-suspended .ambient-blob, body.ambient-suspended .ambient-shape { animation-play-state: paused; }
+.ambient-pulse { position: absolute; width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(circle, #b1e4e888, #c9c1fb55 50%, transparent 70%); animation: ambient-ripple 1.2s ease-out forwards; }
+.ambient-toggle { border: 1px solid var(--border); background: #ffffff70; color: #4e555c; border-radius: 100px; padding: .6rem .8rem; font: .6rem 'JetBrains Mono', monospace; white-space: nowrap; }
+.ambient-toggle:hover { background: #ffffffc0; border-color: #738c99; }
+.ambient-toggle:focus-visible { outline: 2px solid #536d9c; outline-offset: 4px; }
+nav { gap: 1rem; }
+.hero-grid-bg { opacity: .55; pointer-events: none; }
+@keyframes ambient-flow {
+  from { transform: rotate(-18deg) scale(.9); border-radius: 45% 55% 60% 40%; }
+  to { transform: rotate(28deg) scale(1.15); border-radius: 60% 40% 45% 55%; }
+}
+@keyframes ambient-float {
+  from { transform: translateY(-14px) rotate(-8deg); }
+  to { transform: translateY(20px) rotate(10deg); }
+}
+@keyframes ambient-ripple {
+  from { transform: translate(-50%, -50%) scale(1); opacity: .85; }
+  to { transform: translate(-50%, -50%) scale(18); opacity: 0; }
+}
+@media (max-width: 768px) {
+  .ambient-blob { width: 110%; filter: blur(45px); opacity: .6; }
+  .ambient-shape { opacity: .1; }
+  .ambient-shape.ring { width: 85px; height: 85px; }
+  .ambient-toggle { min-height: 44px; }
+  .nav-status { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body:not(.ambient-motion) .ambient-blob, body:not(.ambient-motion) .ambient-shape { animation: none; translate: none; }
+}

@@ -8,6 +8,14 @@ export function hasRole(profile: Principal, allowed: readonly Role[]) {
 }
 export function mayAccessAccount(profile: Principal) { return profile.account_status !== 'suspended'; }
 export function safeNext(value: unknown): string {
-  // Explicit destinations avoid protocol-relative, encoded and backslash redirects.
-  return value === '/admin' ? '/admin' : '/account';
+  if (value === '/admin' || value === '/account' || value === '/account/bookings') return value;
+  if (typeof value !== 'string' || value.length>700 || /[%\\#\s]/.test(value)) return '/account';
+  // Only local booking routes and an allowlist of non-financial selections.
+  const [path,query='']=value.split('?');
+  if (!/^\/booking\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(path) || path==='/booking/confirmation') return '/account';
+  const params=new URLSearchParams(query);
+  if ([...params.keys()].some(k=>!['start','end','method'].includes(k)||params.getAll(k).length!==1)) return '/account';
+  for (const k of ['start','end']) if(params.has(k)&&!/^\d{4}-\d{2}-\d{2}$/.test(params.get(k)!))return '/account';
+  if(params.has('method')&&params.get('method')!=='collection')return '/account';
+  return path+(params.size?`?${params}`:'');
 }

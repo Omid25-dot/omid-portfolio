@@ -1,5 +1,16 @@
 import { test, expect } from '@playwright/test';
 import { fixtureSession } from '../fixtures/session';
+test('HTTP: booking entry preserves only safe intent through login/signup',async({request})=>{
+ const next='/booking/mini-excavator?start=2091-09-22&end=2091-09-24&method=collection';
+ const entry=await request.get(next);expect(await entry.text()).toContain('/login?next=');
+ const login=await request.get(`/login?next=${encodeURIComponent(next)}`);const html=await login.text();expect(html).toContain('mini-excavator');expect(html).toContain('/signup?next=');
+ const hostile=await request.get('/login?next=https%3A%2F%2Fevil.example');expect(await hostile.text()).toContain('name="next" value="/account"');
+});
+test('HTTP: confirmation and booking-reference routes require a verified session',async({request})=>{
+ for(const path of ['/booking/confirmation/RNT-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA','/account/bookings/RNT-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA']){
+  const r=await request.get(path);const html=await r.text();expect(html).toContain('/login?next=');expect(html).not.toContain('Thanks. Your request is in.');
+ }
+});
 // Browser-independent HTTP tests of real Next.js SSR routes, using the labelled Auth fixture.
 test('HTTP: anonymous protected routes render safe redirects', async({request})=>{
  for (const path of ['/account','/admin']) {

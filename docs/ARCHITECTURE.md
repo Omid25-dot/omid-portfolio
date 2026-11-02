@@ -1,6 +1,22 @@
 # Architecture
 
-Status: Phase 3 public catalogue implemented over the verified Phase 2 backend. Phase 1 actual email/recovery acceptance remains outstanding. PRODUCT_SPEC.md remains authoritative. Checkout, payments, Identity, delivery quoting, inspections and payouts remain deferred. See IMPLEMENTATION_STATUS.md and SETUP.md for evidence/configuration.
+Status: Phase 4 authenticated unpaid booking requests and customer management implemented over the Phase 2/3 engines. Phase 1 actual email/recovery acceptance remains outstanding. PRODUCT_SPEC.md remains authoritative. Payments, Identity, delivery quoting, inspections and payouts remain deferred. See IMPLEMENTATION_STATUS.md and SETUP.md for evidence/configuration.
+
+## Phase 4 customer requests
+
+Public browsing/quotes remain anonymous. A successful collection quote enables `/booking/[slug]?start=…&end=…&method=collection`. Entering the request review requires a verified Supabase session and current profile. `safeNext` accepts only explicit account/admin destinations or a validated local booking path with allowlisted dates/collection method; financial data and external URLs cannot become continuation targets. Login carries this URL in its form. Signup/recovery actions store a one-hour HttpOnly SameSite=Lax continuation cookie, revalidated and consumed after email confirmation/PKCE exchange or password recovery. Email must open in the same browser to reuse the cookie; a different browser safely lands in Account. No authorization comes from user metadata or continuation state.
+
+The review fetches equipment, availability, collection information and authoritative pricing again. It issues a 15-minute HMAC-signed review binding the user, equipment, dates, safe quote and a random retry key. It is sent in the POST form, never in a URL. A user can edit contact name/phone and must acknowledge an unpaid, temporary request; this does not fabricate approved commercial rental terms. Delivery is disabled until genuine pricing exists. Verification requirements are displayed without collecting documents or pretending verification is complete.
+
+`services/customer-booking-actions.ts` reauthenticates, checks origin and Redis limits, validates contact details and the signed review, then calls `request_customer_booking`. That authenticated SQL wrapper calls the existing `create_rental_booking` engine: pricing/ownership snapshots, equipment locking, exclusion constraints, status history, expiry and audit remain authoritative. After creation inside the same transaction, the wrapper compares the actual persisted safe pricing snapshot with the reviewed quote; mismatch raises `QUOTE_CHANGED` and rolls back the entire transaction, including history/audit. Client quote values are comparison data only, never used to calculate or store a price. New requests start REQUESTED; nothing advances to CONFIRMED or records payment.
+
+`private.customer_booking_requests` records a per-customer unique request key, booking FK, minimal contact snapshot, safe equipment/collection snapshot and versioned request acknowledgement. It has deny-all RLS and no browser grants; restricted definer functions are its only application access. Profile-first locking serialises duplicate requests. A retry with the same key and selections returns the original reference; different overlapping requests still conflict. The existing Phase 2 direct rental RPC remains available with its original server-calculated financial and permission boundary; the signed review adds consent/retry protection to the customer-facing workflow.
+
+Confirmation and account detail use a random public booking reference, but authorization always checks `customer_id = auth.uid()`. Dedicated read functions return explicit safe fields, pricing snapshots and history status/time only. No owner, commission, actor identity, internal reason, audit data or private contact snapshot reaches the browser. Collection/equipment display snapshots survive later catalogue changes for Phase 4 requests; older Phase 2 rows use the current equipment title and may have no collection snapshot. Lists are paginated at 20 records; account groups apply within each page. Booking/account/auth routes are dynamic and explicitly noindex.
+
+Customer withdrawal extends the existing transition service only for an active customer's own REQUESTED booking. The confirmation form is explicit; the guarded RPC releases capacity and records history, cancellation metadata and audit atomically. Later statuses require the team; no refund rules or refund operations are invented. Expiry still follows Phase 2: availability ignores elapsed holds, acquisition/transition cleans them opportunistically, and the service-only sweeper needs deployment scheduling. UI labels elapsed holds as expired even before a sweep and never promises permanent reservation.
+
+No card payments, deposit movements, Identity, inspection, payout or marketplace functionality is implemented. The current 30-minute demo hold and commercial policy settings require business approval before launch.
 
 ## Phase 3 public catalogue
 
@@ -14,7 +30,11 @@ Public availability calls the extracted Phase 2 private core; the original authe
 
 The development seed creates 12 marked demo assets, a demo location/service area and an internal owner. Original representative illustrations upload only to `catalogue/demo-phase3/`. They are deliberate placeholders, not photography. Ordered multi-image galleries are supported; current seeds have one image per asset. Production photos, commercial policies and rates are still required.
 
-Shared catalogue components provide navigation, cards, search, gallery and quote panels. Branding, region, support and indexing are configurable; development defaults to noindex. Canonical/Open Graph metadata covers public pages. Informational/legal pages honestly state remaining setup. No checkout or marketplace UI is included.
+Shared catalogue components provide navigation, cards, search, gallery and quote panels. Branding, region, support and indexing are configurable; development defaults to noindex. Canonical/Open Graph metadata covers public pages. Informational/legal pages honestly state remaining setup. The Phase 3 catalogue is extended by the Phase 4 unpaid-request flow above. Payment checkout and marketplace UI remain deferred.
+
+## Phase 4 presentation system
+
+The October 2026 redesign retains the current Next.js application and provider boundaries. `app/globals.css` owns the shared configurable colour, surface, spacing and typography language for public, auth, account and unpaid-request pages. The homepage uses the existing catalogue queries and explicit demo artwork rather than a new frontend inventory provider. The search form appears before the illustration in mobile reading/focus order. `components/ui/icon.tsx` provides a small set of locally rendered Lucide SVGs with licence notices, without a new runtime dependency. `MobileNavigation` is a small client component around native details/summary for link-selection dismissal, Escape and focus restoration; signed-in/admin visibility is still decided in the server header. Native forms, date fields, galleries, server pricing, auth continuation and customer request services retain their existing contracts.
 
 ## Application shape
 
@@ -60,7 +80,7 @@ Phase 1 populates auth/security/UI modules and minimal account/admin routes. Pha
 
 Exact versions are in package.json/package-lock.json: Next.js 16.3.5, React 19.3.0, TypeScript 6.0.3, Tailwind 4.3.3, Supabase SSR 0.12.7/JS 2.116.0 and Zod 4.6.5. Node 24 is the development target. TypeScript 6.0.3 and ESLint 9.39.5 were selected for compatible peer ranges: current TypeScript 7 exceeds the TypeScript-ESLint supported range, and the React lint plugin excludes ESLint 10. ESLint 9's upstream deprecation is a tracked tooling limitation; npm reports no known dependency vulnerabilities at verification time.
 
-Next.js runs server services with the Node runtime. `proxy.ts` refreshes Supabase cookies; protected pages/actions independently verify identity with `getUser()` and load current profile permissions. The development launcher enables Watchpack polling after local EMFILE errors. `agentRules: false` prevents Next.js from modifying the project's authoritative AGENTS.md. TypeScript, lint, embedded PostgreSQL tests and HTTP route tests are configured; Playwright browser tests are present but environment-blocked here.
+Next.js runs server services with the Node runtime. `proxy.ts` refreshes Supabase cookies; protected pages/actions independently verify identity with `getUser()` and load current profile permissions. The development launcher enables Watchpack polling after local EMFILE errors. `agentRules: false` prevents Next.js from modifying the project's authoritative AGENTS.md. TypeScript, lint, embedded PostgreSQL tests and HTTP route tests are configured; Installed Chrome now runs the Phase 3/4 desktop/mobile tests; actual Phase 1 email delivery/recovery acceptance remains outstanding.
 
 ## Identity and access
 
@@ -126,7 +146,7 @@ The structural transition graph is:
 | DISPUTED | Recorded preceding state only |
 | DECLINED, CANCELLED | None |
 
-Staff may perform ordinary operational transitions; cancellation, disputes and completion require admin/super-admin. Customer status writes are unavailable; customer cancellation remains a later supported workflow. Decline/cancellation/dispute require a reason. Approval, payment-pending and checkout recheck operational availability. The Phase 2 RPC explicitly rejects CONFIRMED and COMPLETED with `INTEGRATION_REQUIRED`: real payment/verification and return-inspection prerequisites have not been implemented, and admins cannot fabricate them. The structural graph is ready for future trusted integration writers, which must add those authoritative gates and their race tests. There is no payment/Identity success simulation.
+Staff may perform ordinary operational transitions; cancellation, disputes and completion require admin/super-admin. Direct customer status writes remain unavailable; Phase 4 adds only the guarded withdrawal of an own REQUESTED booking described above. Decline/cancellation/dispute require a reason. Approval, payment-pending and checkout recheck operational availability. The Phase 2 RPC explicitly rejects CONFIRMED and COMPLETED with `INTEGRATION_REQUIRED`: real payment/verification and return-inspection prerequisites have not been implemented, and admins cannot fabricate them. The structural graph is ready for future trusted integration writers, which must add those authoritative gates and their race tests. There is no payment/Identity success simulation.
 
 ## Future payments, identity and deposits
 
