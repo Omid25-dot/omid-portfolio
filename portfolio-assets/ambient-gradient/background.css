@@ -27,9 +27,6 @@ body { position: relative; isolation: isolate; }
 body.ambient-motion .ambient-blob, body.ambient-motion .ambient-shape { animation-play-state: running; }
 body.ambient-suspended .ambient-blob, body.ambient-suspended .ambient-shape { animation-play-state: paused; }
 .ambient-pulse { position: absolute; width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(circle, #b1e4e888, #c9c1fb55 50%, transparent 70%); animation: ambient-ripple 1.2s ease-out forwards; }
-.ambient-toggle { border: 1px solid var(--border); background: #ffffff70; color: #4e555c; border-radius: 100px; padding: .6rem .8rem; font: .6rem 'JetBrains Mono', monospace; white-space: nowrap; }
-.ambient-toggle:hover { background: #ffffffc0; border-color: #738c99; }
-.ambient-toggle:focus-visible { outline: 2px solid #536d9c; outline-offset: 4px; }
 nav { gap: 1rem; }
 .hero-grid-bg { opacity: .55; pointer-events: none; }
 @keyframes ambient-flow {
@@ -48,9 +45,4 @@ nav { gap: 1rem; }
   .ambient-blob { width: 110%; filter: blur(45px); opacity: .6; }
   .ambient-shape { opacity: .1; }
   .ambient-shape.ring { width: 85px; height: 85px; }
-  .ambient-toggle { min-height: 44px; }
-  .nav-status { display: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  body:not(.ambient-motion) .ambient-blob, body:not(.ambient-motion) .ambient-shape { animation: none; translate: none; }
 }

@@ -16,6 +16,8 @@ Saved an exact copy of the current portfolio at `portfolio-versions/blue-violet-
 
 Created a separate full-page portfolio experiment at `portfolio-versions/terminal-rain-preview/index.html` with `glyph-rain.js`. The original canvas effect includes two layers of blue/lavender glyph trails, pointer-local slowing and click cascades, while preserving the portfolio's cursor and scroll effects. Decorative drawing stops on pause, offscreen and hidden-tab states; resizing scales the canvas with a capped pixel ratio. Existing reduced-motion defaults remain effective. JavaScript syntax checks and browser visual checks passed; there were no page console errors and no horizontal overflow at default/390px widths. The original saved source was verified byte-for-byte against the current root source. A separate local browser preview was opened; no GitHub push or deployment was performed.
 
+Personal background control update (2 November): at the user’s explicit request, removed the background play/pause button and its preference gate. The mesh, floating shapes and pointer/click interactions now start automatically. Hidden tabs still suspend rendering. The terminal border retains its separate control. JavaScript syntax and whitespace checks passed.
+
 ## Current phase
 
 ### Personal portfolio interactive background — 2 November 2026
