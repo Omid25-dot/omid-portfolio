@@ -18,6 +18,8 @@ Created a separate full-page portfolio experiment at `portfolio-versions/termina
 
 Personal background control update (2 November): at the user’s explicit request, removed the background play/pause button and its preference gate. The mesh, floating shapes and pointer/click interactions now start automatically. Hidden tabs still suspend rendering. The terminal border retains its separate control. JavaScript syntax and whitespace checks passed.
 
+Terminal border animation fix (2 November): removed the reduced-motion-derived initial pause and terminal play/pause control in the current live-design integration. The user explicitly requested visible electricity/hover response. The supplied component now receives paused=false and interactive=true; increased speed, arcs and hover radius make the response clearer. Rebuilt the static bundle, added content-based script versioning to defeat the stale cached bundle observed in the browser, and refreshed the preview. Browser verification confirmed the old button is absent, the versioned bundle is loaded, no page console errors, and visible animated electricity/click arcs around the terminal. No deployment was performed.
+
 ## Current phase
 
 ### Personal portfolio interactive background — 2 November 2026
@@ -243,3 +245,7 @@ Embedded PostgreSQL tests execute the migration SQL against PGlite with a minima
 ## Recommended Phase 5
 
 Follow PRODUCT_SPEC §90 with protected admin equipment management and booking-request review/approval workflows, including auditable operations and agreed hold handling. Approve commercial settings and schedule expiry cleanup. Payment/Identity should be a separately authorised integration phase after that foundation; never bypass the existing confirmation gates. Complete actual email/recovery acceptance before launch. Do not start Phase 5 automatically.
+
+Personal portfolio scroll animation (4 November 2026): updated the separate root static portfolio with staggered section/card entrances, replay on viewport re-entry and a gradient scroll-progress line. Independent translate animation preserves hover and terminal transforms. Content stays visible without the observer enhancement; reduced-motion preferences use a short fade without movement. Saved the prior HTML in portfolio-versions/before-scroll-2026-11-04 and refreshed the standalone preview. Rental application unchanged; no deployment performed.
+
+Personal portfolio scroll scene (4 November 2026): replaced the reading-progress bar with an original scroll-driven decorative light-ribbon scene, inspired by Codrops theme-scroll examples and React Bits Side Rays. Scrolling scrubs SVG line drawing/rotation, background palette and dark-section light positions in either direction. Existing electric terminal and pointer-responsive background retained. No third-party component code/dependency added. Prior HTML/background assets saved in portfolio-versions/before-scroll-scene-2026-11-04. Preview refreshed; not deployed.

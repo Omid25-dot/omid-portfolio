@@ -46,3 +46,16 @@ nav { gap: 1rem; }
   .ambient-shape { opacity: .1; }
   .ambient-shape.ring { width: 85px; height: 85px; }
 }
+
+/* Scroll-scrubbed light ribbons; decorative overlay never intercepts input. */
+.scroll-scene { position: fixed; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; opacity: var(--scene-opacity, 0); mix-blend-mode: screen; }
+.scroll-scene svg { width: 100%; height: 100%; transform: translate3d(var(--scene-shift, 0px), 0, 0) rotate(var(--scene-turn, 0deg)) scale(1.18); transform-origin: 75% 50%; }
+.scene-ribbon { stroke-width: 2; stroke-dasharray: 1; stroke-dashoffset: var(--scene-draw, 1); }
+.scene-ribbon.second { stroke-width: 1; opacity: .55; }
+.scene-bloom { stroke-width: 65; filter: blur(30px); opacity: .45; }
+.scene-orbit { stroke-width: 1; opacity: .35; transform-origin: 800px 520px; transform: rotate(var(--scene-orbit, 0deg)); }
+.ambient-background { background: var(--scene-paper, #f4f1eb); filter: hue-rotate(var(--scene-hue, 0deg)); }
+.projects-section, .contact-section {
+  background: radial-gradient(ellipse at var(--scene-light-x, 90%) 25%, #42427d66, transparent 65%), radial-gradient(ellipse at 15% var(--scene-light-y, 80%), #14606a55, transparent 60%), #0a0a0a;
+}
+@media (max-width: 768px) { .scroll-scene svg { width: 150%; margin-left: -25%; } }

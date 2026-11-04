@@ -1,6 +1,5 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { createPortal } from 'react-dom';
 import ElectricBorder from './ElectricBorder';
 
 const terminal = document.querySelector('.hero .terminal');
@@ -12,27 +11,11 @@ function ExistingTerminal() {
 }
 
 function BorderedTerminal() {
-  const [paused, setPaused] = useState(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  useEffect(() => {
-    const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const update = () => setPaused(preference.matches);
-    preference.addEventListener('change', update);
-    return () => preference.removeEventListener('change', update);
-  }, []);
-
-  return <>
-    <ElectricBorder color="#7df9ff" speed={.8} chaos={.45} spread={.45}
+  return <ElectricBorder color="#7df9ff" speed={1.1} chaos={.6} spread={.6}
       strands={3} thickness={1.5} borderRadius={16} glow={.65} intensity={.9}
-      arcs={.7} flicker={.25} paused={paused} interactive={!paused}>
+      arcs={1.2} flicker={.35} paused={false} interactive cursorRadius={150}>
       <ExistingTerminal />
-    </ElectricBorder>
-    {createPortal(<button className="border-motion" type="button"
-      aria-pressed={paused} onClick={() => setPaused(value => !value)}
-      onPointerEnter={() => document.body.classList.add('cursor-hover')}
-      onPointerLeave={() => document.body.classList.remove('cursor-hover')}>
-      {paused ? 'Play border' : 'Pause border'}
-    </button>, terminal.querySelector('.terminal-bar'))}
-  </>;
+    </ElectricBorder>;
 }
 
 if (terminal) {
