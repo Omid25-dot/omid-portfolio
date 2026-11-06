@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "portfolio",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["/Users/omidmerati/Desktop/website/.claude/serve-portfolio.mjs"],
+      "port": 8765
+    }
+  ]
+}
