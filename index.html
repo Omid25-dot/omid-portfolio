@@ -2,7 +2,7 @@
 <html lang="en" data-theme="chalk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Omid Merati — Developer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -44,6 +44,7 @@
   code, .mono { font-family: 'JetBrains Mono', monospace; }
 
   /* ---------- Colour flood (expands from the trace node on chapter change) ---------- */
+  #vh-probe { position: fixed; left: 0; top: 0; width: 0; height: 100vh; height: 100lvh; visibility: hidden; pointer-events: none; }
   .flood { position: fixed; inset: 0; z-index: -1; pointer-events: none; clip-path: circle(0 at 0 0); }
 
   /* ---------- Circuit trace down the left gutter ---------- */
@@ -106,7 +107,9 @@
   .hero-top { grid-column: 1 / -1; }
   .name { font-family: 'Anybody', sans-serif; font-size: clamp(3.6rem, 12vw, 11.5rem); line-height: .86; letter-spacing: -.035em; margin-bottom: 2.5rem; user-select: none; }
   .name-line { display: block; white-space: nowrap; }
-  .name .ch { display: inline-block; font-variation-settings: 'wdth' var(--wd, 100), 'wght' var(--wg, 700); transform: translateY(var(--ty, 0)); opacity: var(--op, 1); will-change: font-variation-settings; }
+  .name .ch { display: inline-block; font-variation-settings: 'wdth' var(--wd, 100), 'wght' var(--wg, 700); transform: translateY(var(--ty, 0)); opacity: var(--op, 1); }
+  .js .name:not(.name-ready) { opacity: 0; animation: name-failsafe 0s 3s forwards; }
+  @keyframes name-failsafe { to { opacity: 1; } }
   .name-line.second { color: var(--accent); transition: color .5s; }
   .name-dev { display: inline-flex; align-items: center; gap: .8rem; font-family: 'Anybody'; font-variation-settings: 'wdth' 60, 'wght' 300; font-size: .32em; letter-spacing: 0; vertical-align: top; margin-left: .2em; color: var(--muted); }
   .hero-badge { font-family: 'JetBrains Mono', monospace; font-size: .8rem; background: var(--fg); color: var(--bg); padding: .3rem .65rem; border-radius: 6px; transition: background .4s, color .4s; }
@@ -224,6 +227,14 @@
     .projects-header { flex-direction: column; align-items: flex-start; gap: 0; }
     .projects-count { margin: -1.25rem 0 2rem; }
     footer { padding: 1.5rem 1.25rem 1.5rem calc(var(--gutter) + .75rem); }
+    /* Lighter paint on phones: no backdrop blur, no per-frame card filters. */
+    nav { background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: none; -webkit-backdrop-filter: none; transition: none; }
+    .project-card { transform: none; filter: none; box-shadow: 0 -8px 20px rgba(0,0,0,.15); }
+    /* Headings stretch once on entry; the name eases between its 20 hero steps. */
+    .js h2.stretch { transition: font-variation-settings .9s cubic-bezier(.2,.8,.2,1); }
+    .js h2.stretch:not(.in-view) { --w: 52; }
+    .js h2.stretch.in-view { --w: 118; }
+    .name.name-settled .ch { transition: font-variation-settings .18s linear; }
   }
   /* Landscape phones: the banner says "tilt for full view", so show the terminal. */
   @media (max-width: 900px) and (orientation: landscape) {
@@ -234,9 +245,11 @@
     .stat-chip { font-size: .7rem; padding: .35rem .7rem; }
   }
   @media (max-width: 768px) and (orientation: portrait) {
-    #tilt-banner { display: flex; position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%); z-index: 200; background: var(--fg); color: var(--bg); font-size: .85rem; padding: .7rem 1.2rem; border-radius: 999px; gap: .5rem; white-space: nowrap; animation: banner-in .5s ease 1.5s both; }
+    #tilt-banner { display: flex; position: fixed; left: 0; right: 0; margin-inline: auto; width: max-content; bottom: calc(1rem + env(safe-area-inset-bottom)); z-index: 200; background: var(--fg); color: var(--bg); font-size: .85rem; padding: .7rem 1.2rem; border-radius: 999px; gap: .5rem; white-space: nowrap; opacity: 0; translate: 0 12px; animation: banner-in .5s ease 1.5s forwards; }
+    #tilt-banner.is-gone { animation: banner-out .35s ease forwards; pointer-events: none; }
   }
-  @keyframes banner-in { from { opacity: 0; transform: translateX(-50%) translateY(12px); } }
+  @keyframes banner-in { to { opacity: 1; translate: 0 0; } }
+  @keyframes banner-out { from { opacity: 1; translate: 0 0; } to { opacity: 0; translate: 0 8px; } }
 
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
@@ -249,6 +262,7 @@
 <body>
 
 <div class="flood" aria-hidden="true"></div>
+<div id="vh-probe" aria-hidden="true"></div>
 <svg class="trace" aria-hidden="true">
   <path class="trace-base"/>
   <path class="trace-live"/>
@@ -477,23 +491,30 @@
   const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
   const lerp = (a, b, t) => a + (b - a) * t;
   const easeOut = t => 1 - Math.pow(1 - t, 3);
+  const mobile = matchMedia('(max-width: 900px)');
+  const hoverNone = matchMedia('(hover: none)');
+  const noCursor = matchMedia('(hover: none), (pointer: coarse), (max-width: 768px)');
 
   document.getElementById('footer-date').textContent =
     new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 
-  /* ---------- Cursor ---------- */
+  /* ---------- Cursor (mouse only; the loop sleeps once the ring has caught up) ---------- */
   const cur = document.getElementById('cursor'), ring = document.getElementById('cursor-ring');
-  let mx = -100, my = -100, rx = -100, ry = -100, pointerSeen = false;
-  document.addEventListener('pointermove', e => {
-    if (e.pointerType !== 'mouse') return;
-    mx = e.clientX; my = e.clientY; pointerSeen = true;
-  }, { passive: true });
-  (function cursorLoop() {
+  let mx = -100, my = -100, rx = -100, ry = -100, pointerSeen = false, cursorRunning = false;
+  cur.style.transform = ring.style.transform = 'translate(-100px, -100px)';
+  function cursorLoop() {
     rx += (mx - rx) * .16; ry += (my - ry) * .16;
     cur.style.transform = `translate(${mx}px, ${my}px)`;
     ring.style.transform = `translate(${rx}px, ${ry}px)`;
-    requestAnimationFrame(cursorLoop);
-  })();
+    if (Math.abs(mx - rx) + Math.abs(my - ry) > .2) requestAnimationFrame(cursorLoop);
+    else cursorRunning = false;
+  }
+  document.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse') return;
+    mx = e.clientX; my = e.clientY; pointerSeen = true;
+    if (!noCursor.matches && !cursorRunning) { cursorRunning = true; requestAnimationFrame(cursorLoop); }
+    wakeName();
+  }, { passive: true });
   document.querySelectorAll('a, button, .project-card, .tag, .name .ch, .terminal, .stat-chip').forEach(el => {
     el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
     el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
@@ -512,6 +533,7 @@
   }));
 
   /* ---------- Kinetic name ---------- */
+  const nameEl = document.querySelector('.name');
   const lines = [...document.querySelectorAll('.name-line')];
   const letters = [];
   lines.forEach((line, li) => {
@@ -521,7 +543,7 @@
       const s = document.createElement('span');
       s.className = 'ch'; s.textContent = chr;
       frag.appendChild(s);
-      letters.push({ el: s, line: li, i: letters.filter(l => l.line === li).length, prox: 0 });
+      letters.push({ el: s, line: li, i: letters.filter(l => l.line === li).length, prox: 0, wd: -1, wg: -1, op: -1, ty: -1 });
     });
     line.replaceChild(frag, textNode);
   });
@@ -531,57 +553,112 @@
     { from: [62, 280], to: [138, 880] }
   ];
   const hero = document.querySelector('.hero');
-  const introStart = performance.now() + 150;
+  const INTRO_MS = letters.length * 70 + 900;
   let heroP = 0, heroVisible = true;
-  let nameRunning = false;
-  const startName = () => { if (!nameRunning) { nameRunning = true; requestAnimationFrame(nameLoop); } };
-  new IntersectionObserver(([e]) => { heroVisible = e.isIntersecting; if (heroVisible) startName(); }).observe(hero);
+  let nameReady = false, introStart = 0, introDone = false, nameRunning = false, nameDirty = true;
 
+  // The loop only runs while something is changing (intro, scroll, pointer
+  // easing). Everything that can change the name calls wakeName().
+  function wakeName() {
+    nameDirty = true;
+    if (nameReady && heroVisible && !nameRunning) { nameRunning = true; requestAnimationFrame(nameLoop); }
+  }
   function nameLoop(now) {
+    nameDirty = false;
+    let active = false, justDone = false;
+    if (!introDone && now - introStart > INTRO_MS) { introDone = justDone = true; nameEl.classList.add('name-settled'); }
+    const tracking = pointerSeen && !hoverNone.matches;
     letters.forEach((l, idx) => {
       const sh = shape[l.line];
       let wd = lerp(sh.from[0], sh.to[0], heroP);
       let wg = lerp(sh.from[1], sh.to[1], heroP);
-      // pointer proximity swell
+      // pointer proximity swell (mouse devices only)
       let target = 0;
-      if (pointerSeen) {
+      if (tracking) {
         const r = l.el.getBoundingClientRect();
         const d = Math.hypot(mx - (r.left + r.width / 2), my - (r.top + r.height / 2));
         target = clamp(1 - d / 220);
       }
       l.prox += (target - l.prox) * .14;
+      if (Math.abs(target - l.prox) > .004) active = true; else l.prox = target;
       wd += l.prox * 22; wg += l.prox * 220;
       // page-load sweep, letters staggered
       let op = 1, ty = 0;
-      if (!reduceMotion) {
+      if (!introDone && !reduceMotion) {
         const t = easeOut(clamp((now - introStart - idx * 70) / 900));
         wd = lerp(50, wd, t); wg = lerp(100, wg, t); op = clamp(t * 1.6); ty = (1 - t) * 0.35;
+        active = true;
       }
-      const st = l.el.style;
-      st.setProperty('--wd', wd.toFixed(1));
-      st.setProperty('--wg', Math.min(900, wg).toFixed(0));
-      st.setProperty('--op', op.toFixed(3));
-      st.setProperty('--ty', ty.toFixed(3) + 'em');
+      wg = Math.min(900, wg);
+      // only touch the DOM (and trigger text re-layout) for visible changes
+      if (justDone || Math.abs(wd - l.wd) > .4 || Math.abs(wg - l.wg) > 3 || Math.abs(op - l.op) > .01 || Math.abs(ty - l.ty) > .004) {
+        l.wd = wd; l.wg = wg; l.op = op; l.ty = ty;
+        const st = l.el.style;
+        st.setProperty('--wd', wd.toFixed(1));
+        st.setProperty('--wg', wg.toFixed(0));
+        st.setProperty('--op', op.toFixed(3));
+        st.setProperty('--ty', ty.toFixed(3) + 'em');
+      }
     });
-    if (heroVisible) requestAnimationFrame(nameLoop); else nameRunning = false;
+    if (heroVisible && (active || nameDirty)) requestAnimationFrame(nameLoop); else nameRunning = false;
   }
-  startName();
+  function revealName(animate) {
+    if (nameReady) return;
+    nameReady = true;
+    if (!animate || reduceMotion) { introDone = true; nameEl.classList.add('name-settled'); }
+    else introStart = performance.now() + 100;
+    nameEl.classList.add('name-ready');
+    wakeName();
+  }
+  // Wait (briefly) for the variable display font so the sweep never plays in a
+  // fallback face and then swaps. If it is slow, show the name without the sweep.
+  const fontWait = document.fonts && document.fonts.load
+    ? Promise.race([
+        document.fonts.load('800 1em Anybody').then(() => 'ok'),
+        new Promise(r => setTimeout(() => r('timeout'), 1200))
+      ]).catch(() => 'timeout')
+    : Promise.resolve('timeout');
+  fontWait.then(result => { revealName(result === 'ok'); scheduleRebuild(true); });
+  new IntersectionObserver(([e]) => {
+    heroVisible = e.isIntersecting;
+    if (heroVisible) { wakeName(); syncChips(); }
+  }).observe(hero);
 
   /* ---------- Circuit trace + colour flood ---------- */
   const svg = document.querySelector('.trace');
   const base = svg.querySelector('.trace-base'), live = svg.querySelector('.trace-live');
   const head = svg.querySelector('.trace-head'), nodeGroup = svg.querySelector('.trace-nodes');
   const flood = document.querySelector('.flood');
+  const vhProbe = document.getElementById('vh-probe');
   const chapters = [...document.querySelectorAll('.chapter[data-chapter]')].map(sec => ({
     sec, theme: sec.dataset.chapter, anchor: sec.querySelector('[data-node]'), y: 0, node: null, pad: null
   }));
   const navLinks = [...document.querySelectorAll('.nav-links a')];
   let samples = [], totalLen = 0, x0 = 36, current = 0, floodAnim = null;
+  let lastW = 0, lastDocH = 0, rebuildTimer = null, rebuildForce = false;
   const NS = 'http://www.w3.org/2000/svg';
+  // Content height without the decorative SVG, so a shrinking page is detected.
+  const docH = () => Math.ceil(document.body.getBoundingClientRect().height);
+
+  // Headings change width (and so wrapping) as they animate. Reserve their
+  // widest-state height so that never shifts the sections below them.
+  function reserveHeadingHeights() {
+    heads.forEach(h => {
+      const prevW = h.style.getPropertyValue('--w');
+      h.style.transition = 'none'; h.style.minHeight = ''; h.style.setProperty('--w', '118');
+      const full = h.getBoundingClientRect().height;
+      if (prevW) h.style.setProperty('--w', prevW); else h.style.removeProperty('--w');
+      void h.offsetHeight;          // apply the restore while transitions are still off
+      h.style.transition = '';
+      h.style.minHeight = Math.ceil(full) + 'px';
+    });
+  }
 
   function buildTrace() {
-    const W = parseFloat(getComputedStyle(root).getPropertyValue('--gutter')) || 72;
-    const H = document.documentElement.scrollHeight;
+    reserveHeadingHeights();
+    const W =parseFloat(getComputedStyle(root).getPropertyValue('--gutter')) || 72;
+    const H = docH();
+    lastW = innerWidth; lastDocH = H;
     x0 = W / 2;
     svg.setAttribute('width', W); svg.setAttribute('height', H);
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
@@ -603,7 +680,8 @@
     totalLen = live.getTotalLength();
     live.style.strokeDasharray = `${totalLen} ${totalLen}`;
     samples = [];
-    for (let s = 0; s <= totalLen; s += 4) { const p = live.getPointAtLength(s); samples.push([s, p.x, p.y]); }
+    const step = mobile.matches ? 8 : 4;
+    for (let s = 0; s <= totalLen + step; s += step) { const p = live.getPointAtLength(Math.min(s, totalLen)); samples.push([Math.min(s, totalLen), p.x, p.y]); }
     nodeGroup.textContent = '';
     chapters.forEach(c => {
       c.pad = document.createElementNS(NS, 'circle');
@@ -612,7 +690,18 @@
       c.node.setAttribute('class', 'trace-node'); c.node.setAttribute('cx', x0); c.node.setAttribute('cy', c.y); c.node.setAttribute('r', 6);
       nodeGroup.append(c.pad, c.node);
     });
-    lastLit = -1;
+    rebuilt = true;   // re-light recreated nodes silently; keep the current theme
+  }
+  // Rebuild only for real layout changes. Phone browsers fire resize every time
+  // the address bar shows/hides; those height-only changes must stay cheap.
+  function scheduleRebuild(force) {
+    rebuildForce = rebuildForce || !!force;
+    clearTimeout(rebuildTimer);
+    rebuildTimer = setTimeout(() => {
+      const needed = rebuildForce || innerWidth !== lastW || Math.abs(docH() - lastDocH) > 6;
+      rebuildForce = false;
+      if (needed) { buildTrace(); queue(); }
+    }, 150);
   }
 
   const BG = { chalk: '#eceefb', sandstone: '#efc4b1', clyde: '#17153b', leaf: '#cdebc4', sodium: '#ffb547' };
@@ -631,33 +720,38 @@
     root.style.transition = '';
     floodAnim.cancel(); floodAnim = null;
     flood.style.background = 'transparent';
+    flood.style.willChange = '';
   }
   // The new chapter colour bursts out of the trace node as an expanding circle;
   // the old colour is held on <html> underneath until the circle covers it.
   // Text/accent colours switch once the circle covers most of the screen, so
-  // they never flash against the old background.
+  // they never flash against the old background. Phones get a shorter flood.
   function floodTo(theme, fromY) {
     const fromBg = getComputedStyle(root).backgroundColor;
     commitFlood();
     if (reduceMotion) { root.dataset.theme = theme; return; }
+    const dur = mobile.matches ? 700 : 950, swap = mobile.matches ? 300 : 420;
     root.style.transition = 'none';
     root.style.backgroundColor = fromBg;
     pendingTheme = theme;
-    themeTimer = setTimeout(applyPendingTheme, 420);
+    themeTimer = setTimeout(applyPendingTheme, swap);
     flood.style.background = BG[theme];
+    flood.style.willChange = 'clip-path';
     const y = fromY - scrollY;
     const r = Math.hypot(Math.max(x0, innerWidth - x0), Math.max(y, innerHeight - y)) + 20;
     floodAnim = flood.animate(
       [{ clipPath: `circle(0px at ${x0}px ${y}px)` }, { clipPath: `circle(${r}px at ${x0}px ${y}px)` }],
-      { duration: 950, easing: 'cubic-bezier(.65,0,.25,1)', fill: 'forwards' }
+      { duration: dur, easing: 'cubic-bezier(.65,0,.25,1)', fill: 'forwards' }
     );
     floodAnim.onfinish = commitFlood;
   }
 
-  let lastLit = -1;
+  let lastLit = -1, rebuilt = false;
   function renderTrace() {
     if (!samples.length) return;
-    const targetY = scrollY + innerHeight * .6;
+    // 100lvh probe: stays put while the phone's address bar collapses/expands.
+    const stableVh = vhProbe.offsetHeight || innerHeight;
+    const targetY = scrollY + stableVh * .6;
     let lo = 0, hi = samples.length - 1;
     while (lo < hi) { const m = (lo + hi + 1) >> 1; if (samples[m][2] <= targetY) lo = m; else hi = m - 1; }
     const [len, hx, hy] = samples[lo];
@@ -669,7 +763,7 @@
       if (on) lit = i;
       if (on !== c.node.classList.contains('lit')) {
         c.node.classList.toggle('lit', on);
-        if (on && lastLit !== -1) {
+        if (on && lastLit !== -1 && !rebuilt) {
           c.node.classList.remove('pulse'); c.pad.classList.remove('pulse');
           void c.node.getBBox(); c.node.classList.add('pulse'); c.pad.classList.add('pulse');
         }
@@ -683,6 +777,7 @@
       navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + chapters[lit].sec.id));
     }
     lastLit = lit;
+    rebuilt = false;
   }
 
   /* ---------- Other scroll-linked motion ---------- */
@@ -691,73 +786,134 @@
   const bars = [...document.querySelectorAll('.bar-fill')];
   const bgText = document.querySelector('.contact-bg-text');
   const contact = document.getElementById('contact');
-  const mobile = matchMedia('(max-width: 900px)');
+
+  // Phones: headings stretch once as they enter (CSS transition) instead of
+  // re-laying out large text on every scroll frame.
+  const headObserver = new IntersectionObserver(entries => entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('in-view'); headObserver.unobserve(e.target); }
+  }), { threshold: .2 });
+  heads.forEach(h => {
+    headObserver.observe(h);
+    // A widening heading can re-wrap and shift everything below it.
+    h.addEventListener('transitionend', () => scheduleRebuild());
+  });
+  mobile.addEventListener('change', () => {
+    heads.forEach(h => h.style.removeProperty('--w'));
+    scheduleRebuild(true); queue();
+  });
 
   function renderScroll() {
     frame = null;
     const vh = innerHeight;
-    heroP = clamp(scrollY / (hero.offsetHeight * .8));
+    // Phones: quantise the hero swap into 20 steps (each step is a font re-layout).
+    const rawP = clamp(scrollY / (hero.offsetHeight * .8));
+    const p = mobile.matches ? Math.round(rawP * 20) / 20 : rawP;
+    if (p !== heroP) { heroP = p; wakeName(); }
     renderTrace();
-    // Headings stretch from condensed to wide as they rise into view.
-    heads.forEach(h => {
-      const r = h.getBoundingClientRect();
-      const t = easeOut(clamp((vh - r.top) / (vh * .65)));
-      h.style.setProperty('--w', (52 + t * 66).toFixed(1));
-    });
-    // Stacked cards shrink back as the next card slides over them.
-    cards.forEach((c, i) => {
-      const next = cards[i + 1];
-      let k = 0;
-      if (next && !mobile.matches) {
-        const r = next.getBoundingClientRect();
-        k = clamp((vh - r.top) / (vh * .75));
-      }
-      c.style.setProperty('--s', (1 - k * .06).toFixed(4));
-      c.style.setProperty('--b', (1 - k * .35).toFixed(3));
-    });
+    if (!mobile.matches) {
+      // Desktop: headings stretch from condensed to wide as they rise into view.
+      heads.forEach(h => {
+        const r = h.getBoundingClientRect();
+        const t = easeOut(clamp((vh - r.top) / (vh * .65)));
+        h.style.setProperty('--w', (52 + t * 66).toFixed(1));
+      });
+      // Stacked cards shrink back as the next card slides over them.
+      cards.forEach((c, i) => {
+        const next = cards[i + 1];
+        let k = 0;
+        if (next) {
+          const r = next.getBoundingClientRect();
+          k = clamp((vh - r.top) / (vh * .75));
+        }
+        c.style.setProperty('--s', (1 - k * .06).toFixed(4));
+        c.style.setProperty('--b', (1 - k * .35).toFixed(3));
+      });
+    }
     bars.forEach(b => {
       const r = b.parentElement.getBoundingClientRect();
       b.style.setProperty('--fill', easeOut(clamp((vh * .92 - r.top) / (vh * .35))).toFixed(3));
     });
     const cr = contact.getBoundingClientRect();
     bgText.style.setProperty('--mx', (-clamp((vh - cr.top) / (vh + cr.height)) * 35 + 5).toFixed(2) + '%');
+    // Safety net: if anything still changed the content height (late fonts, wrapping),
+    // realign the trace once scrolling settles.
+    if (Math.abs(docH() - lastDocH) > 6) scheduleRebuild();
   }
   let frame = null;
   const queue = () => { if (frame === null) frame = requestAnimationFrame(renderScroll); };
   addEventListener('scroll', queue, { passive: true });
-  addEventListener('resize', () => { buildTrace(); queue(); });
-  new ResizeObserver(() => { buildTrace(); queue(); }).observe(document.body);
+  addEventListener('resize', () => { scheduleRebuild(); queue(); });
+  addEventListener('load', () => scheduleRebuild(true));
   buildTrace(); renderScroll();
-  if (document.fonts) document.fonts.ready.then(() => { buildTrace(); renderScroll(); });
+  if (document.fonts) document.fonts.ready.then(() => scheduleRebuild(true));
 
-  /* ---------- Roaming chips in the hero ---------- */
-  const heroRight = document.querySelector('.hero-right');
-  function initChips() {
-    const chips = ['chip-1', 'chip-2', 'chip-3'].map(id => document.getElementById(id)).filter(Boolean).map(el => {
-      const bw = heroRight.offsetWidth, bh = heroRight.offsetHeight, a = Math.random() * Math.PI * 2;
-      return { el, x: Math.random() * Math.max(1, bw - el.offsetWidth), y: Math.random() * Math.max(1, bh - el.offsetHeight),
-        vx: Math.cos(a) * .6, vy: Math.sin(a) * .6, tx: 0, ty: 0, rot: (Math.random() - .5) * 6, rs: (Math.random() - .5) * .04 };
-    });
-    (function tick() {
-      const bw = heroRight.offsetWidth, bh = heroRight.offsetHeight;
-      if (heroVisible && bw) chips.forEach(c => {
-        const cw = c.el.offsetWidth, ch = c.el.offsetHeight;
-        const dx = c.tx - c.x, dy = c.ty - c.y, dist = Math.hypot(dx, dy);
-        if (dist < 40) { c.tx = 20 + Math.random() * (bw - cw - 40); c.ty = 20 + Math.random() * (bh - ch - 40); }
-        if (dist > 0) { c.vx += dx / dist * .003; c.vy += dy / dist * .003; }
-        const sp = Math.hypot(c.vx, c.vy); if (sp > .9) { c.vx *= .9 / sp; c.vy *= .9 / sp; }
-        c.x += c.vx; c.y += c.vy;
-        if (c.x < 0) { c.x = 0; c.vx = Math.abs(c.vx); } if (c.x > bw - cw) { c.x = bw - cw; c.vx = -Math.abs(c.vx); }
-        if (c.y < 0) { c.y = 0; c.vy = Math.abs(c.vy); } if (c.y > bh - ch) { c.y = bh - ch; c.vy = -Math.abs(c.vy); }
-        c.rot += c.rs; if (Math.abs(c.rot) > 5) c.rs *= -1;
-        c.el.style.transform = `translate(${c.x}px, ${c.y}px) rotate(${c.rot}deg)`;
-      });
-      requestAnimationFrame(tick);
-    })();
+  /* ---------- One-time tilt hint (fades away; never re-anchors mid-scroll) ---------- */
+  const banner = document.getElementById('tilt-banner');
+  let bannerGone = false;
+  function onBannerScroll() { if (scrollY > 80) dismissBanner(); }
+  function dismissBanner() {
+    if (bannerGone) return;
+    bannerGone = true;
+    try { sessionStorage.setItem('tiltSeen', '1'); } catch (e) {}
+    removeEventListener('scroll', onBannerScroll);
+    if (parseFloat(getComputedStyle(banner).opacity) < .05) { banner.style.display = 'none'; return; }
+    banner.classList.add('is-gone');
+    banner.addEventListener('animationend', () => { banner.style.display = 'none'; }, { once: true });
   }
-  (document.fonts ? document.fonts.ready : Promise.resolve()).then(initChips);
+  let tiltSeen = false;
+  try { tiltSeen = sessionStorage.getItem('tiltSeen') === '1'; } catch (e) {}
+  if (tiltSeen) { banner.style.display = 'none'; bannerGone = true; }
+  else { addEventListener('scroll', onBannerScroll, { passive: true }); setTimeout(dismissBanner, 6500); }
+
+  /* ---------- Roaming chips in the hero (only while visible on screen) ---------- */
+  const heroRight = document.querySelector('.hero-right');
+  const chipEls = ['chip-1', 'chip-2', 'chip-3'].map(id => document.getElementById(id)).filter(Boolean);
+  let chips = null, chipsRunning = false;
+  const chipsWanted = () => heroVisible && !document.hidden && heroRight.offsetWidth > 0;
+  function chipTick() {
+    if (!chipsWanted()) { chipsRunning = false; return; }
+    const bw = heroRight.offsetWidth, bh = heroRight.offsetHeight;
+    chips.forEach(c => {
+      const cw = c.el.offsetWidth, ch = c.el.offsetHeight;
+      const dx = c.tx - c.x, dy = c.ty - c.y, dist = Math.hypot(dx, dy);
+      if (dist < 40) { c.tx = 20 + Math.random() * (bw - cw - 40); c.ty = 20 + Math.random() * (bh - ch - 40); }
+      if (dist > 0) { c.vx += dx / dist * .003; c.vy += dy / dist * .003; }
+      const sp = Math.hypot(c.vx, c.vy); if (sp > .9) { c.vx *= .9 / sp; c.vy *= .9 / sp; }
+      c.x += c.vx; c.y += c.vy;
+      if (c.x < 0) { c.x = 0; c.vx = Math.abs(c.vx); } if (c.x > bw - cw) { c.x = bw - cw; c.vx = -Math.abs(c.vx); }
+      if (c.y < 0) { c.y = 0; c.vy = Math.abs(c.vy); } if (c.y > bh - ch) { c.y = bh - ch; c.vy = -Math.abs(c.vy); }
+      c.rot += c.rs; if (Math.abs(c.rot) > 5) c.rs *= -1;
+      c.el.style.transform = `translate(${c.x}px, ${c.y}px) rotate(${c.rot}deg)`;
+    });
+    requestAnimationFrame(chipTick);
+  }
+  function syncChips() {
+    if (chipsRunning || !chipsWanted()) return;
+    if (!chips) {
+      const bw = heroRight.offsetWidth, bh = heroRight.offsetHeight;
+      chips = chipEls.map(el => {
+        const a = Math.random() * Math.PI * 2;
+        return { el, x: Math.random() * Math.max(1, bw - el.offsetWidth), y: Math.random() * Math.max(1, bh - el.offsetHeight),
+          vx: Math.cos(a) * .6, vy: Math.sin(a) * .6, tx: 0, ty: 0, rot: (Math.random() - .5) * 6, rs: (Math.random() - .5) * .04 };
+      });
+    }
+    chipsRunning = true; requestAnimationFrame(chipTick);
+  }
+  document.addEventListener('visibilitychange', syncChips);
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(syncChips);
+
+  /* ---------- ElectricBorder: only fetched when the terminal is actually shown ---------- */
+  let electricLoaded = false;
+  function loadElectric() {
+    if (electricLoaded || !heroRight.offsetWidth) return;
+    electricLoaded = true;
+    const s = document.createElement('script');
+    s.src = './portfolio-assets/electric-border/electric-border.js?v=3e15bb396f';
+    document.body.appendChild(s);
+  }
+  loadElectric();   // wide screens: same moment as before
+  matchMedia('(min-width: 901px), (orientation: landscape)').addEventListener('change', () => { loadElectric(); syncChips(); });
 })();
 </script>
-<script src="./portfolio-assets/electric-border/electric-border.js?v=3e15bb396f" defer></script>
 </body>
 </html>
